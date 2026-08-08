@@ -117,7 +117,8 @@ function conditions(S){
   const surfEl = $(S.surf).value;
   return { icao: ($(S.icao).value || "").toUpperCase(), elev, qnh, oat, pa, dev,
            da: pa + 118.8 * dev, wRaw, w: clamp(wRaw, W_KG[0], W_KG[1]),
-           hw: spd * Math.cos(ang), xw: Math.abs(spd * Math.sin(ang)),
+           // `|| 0` collapses negative zero, which would otherwise print as "-0.0 kt"
+           hw: spd * Math.cos(ang) || 0, xw: Math.abs(spd * Math.sin(ang)) || 0,
            windMag: ((windMag % 360) + 360) % 360, trueWind, varn,
            slope: g("slope"), surf: SURFACES[surfEl] ? surfEl : "tar_dry",
            tora: g("tora") * FT_PER_M, toda: g("toda") * FT_PER_M,
@@ -605,6 +606,169 @@ function applyMetar(which, apply){
   if (apply){ renderAll(); save(); }
 }
 
+
+/* ==================================================================
+ * Aerodrome pre-fill (bundled, offline) and forecast (online, optional)
+ *
+ * The bundled data is crowd-sourced and is a typing aid only. It fills
+ * elevation, QFU, slope and surface — never declared distances, which do not
+ * exist in any free dataset and must come from the AIP or VAC plate.
+ *
+ * QFU comes from the runway designator, which is magnetic by definition, so
+ * no variation conversion is needed. It is rounded to 10 degrees, so the QFU
+ * can be up to 5 degrees out; that is negligible for a wind component.
+ * ================================================================== */
+const SURF_MAP = { A:"tar_dry", G:"grass_short", S:"soft" };
+const SURF_NAME = { A:"paved", G:"grass", S:"soft/gravel", X:"water/snow", "?":"unknown" };
+const adLookup = c => AD[(c || "").toUpperCase().trim()] || null;
+const qfuOf = ident => (parseInt(ident, 10) % 36 || 36) * 10;
+
+/* Slope of the roll from end `n` toward the far end, percent, positive uphill. */
+function slopeUp(r, n){
+  const near = n === 0 ? r[4] : r[5], far = n === 0 ? r[5] : r[4];
+  if (near == null || far == null || !r[2]) return null;
+  const s = (far - near) / r[2] * 100;
+  return Math.abs(s) > 5 ? null : s;        // implausible, treat as unknown
+}
+
+function syncAerodrome(which){
+  const S    = which === "dep" ? DEP : ARR;
+  const sel  = $(which === "dep" ? "depRwy" : "arrRwy");
+  const info = $(which === "dep" ? "depAdInfo" : "arrAdInfo");
+  const code = ($(S.icao).value || "").toUpperCase().trim();
+  const a    = adLookup(code);
+  const prev = sel.value;
+  sel.innerHTML = "";
+  if (!a){
+    sel.disabled = true;
+    sel.innerHTML = '<option value="">—</option>';
+    info.innerHTML = code.length >= 3
+      ? flag("warn","Not in the bundled data",
+          `<b>${code}</b> is not in the snapshot (France, Germany, Benelux, Switzerland, ` +
+          `Italy, Spain, UK, Austria, Portugal, Denmark). Enter the fields by hand.`)
+      : "";
+    return;
+  }
+  sel.disabled = false;
+  let opts = '<option value="">— choose a runway —</option>';
+  a[4].forEach((r, ri) => [0,1].forEach(n => {
+    const up = slopeUp(r, n);
+    opts += `<option value="${ri}.${n}">${r[n]} — QFU ${qfuOf(r[n])}° · ` +
+            `${Math.round(r[2]*0.3048)} m · ${SURF_NAME[r[3]]}` +
+            `${up == null ? "" : ` · ${Math.abs(up).toFixed(1)}% ${up >= 0 ? "up" : "down"}`}</option>`;
+  }));
+  sel.innerHTML = opts;
+  if (prev) sel.value = prev;
+  $(S.elev).value = a[1];
+  info.innerHTML =
+    `<div class="adinfo"><b>${a[0]}</b> · elevation ${fmt(a[1])} ft · ` +
+    `${a[4].length} runway${a[4].length > 1 ? "s" : ""}<br>` +
+    `Physical length is shown for reference only — <b>it is not a declared distance</b>. ` +
+    `Take TORA/TODA/ASDA/LDA from the AIP or VAC plate. Source: OurAirports, unofficial.</div>`;
+}
+
+function applyRunway(which){
+  const S   = which === "dep" ? DEP : ARR;
+  const sel = $(which === "dep" ? "depRwy" : "arrRwy");
+  const a   = adLookup($(S.icao).value);
+  if (!a || !sel.value) return;
+  const [ri, n] = sel.value.split(".").map(Number);
+  const r = a[4][ri];
+  $(S.rwy).value  = qfuOf(r[n]);
+  $(S.elev).value = a[1];
+  const up = slopeUp(r, n);
+  // departure field is +uphill, arrival field is +downhill
+  if (up != null) $(S.slope).value = (which === "dep" ? up : -up).toFixed(1);
+  if (SURF_MAP[r[3]]) $(S.surf).value = SURF_MAP[r[3]];
+  renderAll(); save();
+}
+
+/* ---- Open-Meteo forecast, matched to the planned time ----
+   Model output, not an observation: no gusts, and temperature can be a couple
+   of degrees off. Needs a connection, so the result is cached to survive the
+   flight. Model winds are degrees true, like a METAR.                        */
+const FX_KEY = w => "tb20.fx." + w;
+
+function showForecast(which, fx, live){
+  const out = $(which === "dep" ? "depFxOut" : "arrFxOut");
+  const ageMin = Math.round((Date.now() - fx.at) / 60000);
+  let f = flag(live ? "ok" : "warn",
+    live ? `Forecast applied — ${fx.icao} at ${fx.valid}Z`
+         : `Cached forecast — ${fx.icao} at ${fx.valid}Z`,
+    `OAT ${fx.t} °C · QNH ${fx.q} hPa · wind ${String(fx.wd).padStart(3,"0")}°T / ${fx.ws} kt. ` +
+    `Fetched ${ageMin < 1 ? "just now" : hhmm(ageMin) + " ago"}.` +
+    (live ? " Wind reference set to True." : " Re-fetch to update."));
+  f += flag("warn","This is model forecast data, not an observation",
+    "Open-Meteo hourly model. It carries no gusts and its temperature can be a couple of " +
+    "degrees out, which moves the take-off distance by a few percent. Use a METAR for the " +
+    "actual departure calculation whenever one is available.");
+  out.innerHTML = f;
+}
+
+function applyForecast(which, fx){
+  const S = which === "dep" ? DEP : ARR;
+  $(S.oat).value  = fx.t;
+  $(S.qnh).value  = fx.q;
+  $(S.wdir).value = fx.wd;
+  $(S.wspd).value = fx.ws;
+  $(S.wref).value = "true";        // model winds are true, as METAR winds are
+}
+
+async function fetchForecast(which){
+  const S    = which === "dep" ? DEP : ARR;
+  const out  = $(which === "dep" ? "depFxOut" : "arrFxOut");
+  const btn  = $(which === "dep" ? "depFetch" : "arrFetch");
+  const when = $(which === "dep" ? "depTime" : "arrTime").value;
+  const code = ($(S.icao).value || "").toUpperCase().trim();
+  const a    = adLookup(code);
+  if (!a)   { out.innerHTML = flag("warn","No coordinates",
+                "The forecast needs an aerodrome from the bundled data to know where to look."); return; }
+  if (!when){ out.innerHTML = flag("warn","No planned time",
+                "Set the planned time (UTC) first."); return; }
+  const hour = when.slice(0,13) + ":00";
+  btn.disabled = true; btn.textContent = "Fetching…";
+  try {
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${a[2]}&longitude=${a[3]}` +
+      `&hourly=temperature_2m,pressure_msl,wind_speed_10m,wind_direction_10m` +
+      `&wind_speed_unit=kn&timezone=UTC&forecast_days=16`;
+    const res = await fetch(u);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const d = await res.json();
+    let i = d.hourly.time.indexOf(hour);
+    if (i < 0){                                   // fall back to the nearest hour held
+      const target = Date.parse(hour + "Z");
+      let best = Infinity;
+      d.hourly.time.forEach((t, k) => {
+        const dt = Math.abs(Date.parse(t + "Z") - target);
+        if (dt < best){ best = dt; i = k; }
+      });
+      if (i < 0 || best > 36 * 3600e3) throw new Error("outside the forecast range");
+    }
+    const fx = { icao:code, valid:d.hourly.time[i].slice(0,16).replace("T"," "),
+                 t:Math.round(d.hourly.temperature_2m[i]),
+                 q:Math.round(d.hourly.pressure_msl[i]),
+                 wd:Math.round(d.hourly.wind_direction_10m[i]),
+                 ws:Math.round(d.hourly.wind_speed_10m[i]), at:Date.now() };
+    try { localStorage.setItem(FX_KEY(which), JSON.stringify(fx)); } catch(e){ /* full or private */ }
+    applyForecast(which, fx);
+    showForecast(which, fx, true);
+    renderAll(); save();
+  } catch (err){
+    let f = flag("bad","Could not fetch the forecast",
+      `${err.message}. This needs a connection — it cannot work in flight, and it will not ` +
+      `work at all from a file opened directly off disk. Enter the weather by hand, or paste a METAR.`);
+    try {
+      const c = JSON.parse(localStorage.getItem(FX_KEY(which)) || "null");
+      if (c) f += flag("warn","A cached forecast is held",
+        `${c.icao} at ${c.valid}Z — OAT ${c.t} °C, QNH ${c.q} hPa, wind ` +
+        `${String(c.wd).padStart(3,"0")}°T / ${c.ws} kt. Not applied; press again with a connection.`);
+    } catch(e){ /* ignore */ }
+    out.innerHTML = f;
+  } finally {
+    btn.disabled = false; btn.textContent = "Fetch forecast for the planned time";
+  }
+}
+
 /* ---------------------------- shell ---------------------------- */
 function renderRef(){
   let h = `<tr><th>Config</th><th>KIAS</th><th>KCAS</th></tr>`;
@@ -654,7 +818,7 @@ function renderAll(){
 
 const FIELDS = ["depIcao","elev","qnh","oat","wt","rwy","wdir","wspd","wref","varn","slope","surf","tora","toda","asda",
                 "arrIcao","aElev","aQnh","aOat","aWt","aRwy","aWdir","aWspd","aWref","aVarn","aSlope","aSurf","lda",
-                "depMetar","arrMetar",
+                "depMetar","arrMetar","depRwy","arrRwy","depTime","arrTime",
                 "cFrom","cTo","crzAlt","crzFuel","crzDist","crzRes",
                 "wbEW","wbEA","wbP","wbFP","wbR","wbB","wbF","wbTF"];
 try {
@@ -682,6 +846,12 @@ for (const k of FIELDS)
     $(k).addEventListener("input", () => { renderAll(); save(); });
 $("depMetar").addEventListener("input", () => applyMetar("dep", true));
 $("arrMetar").addEventListener("input", () => applyMetar("arr", true));
+$("depIcao").addEventListener("input", () => { syncAerodrome("dep"); save(); });
+$("arrIcao").addEventListener("input", () => { syncAerodrome("arr"); save(); });
+$("depRwy").addEventListener("change", () => applyRunway("dep"));
+$("arrRwy").addEventListener("change", () => applyRunway("arr"));
+$("depFetch").addEventListener("click", () => fetchForecast("dep"));
+$("arrFetch").addEventListener("click", () => fetchForecast("arr"));
 $("wbBackoff").addEventListener("change", () => { renderAll(); save(); });
 
 $("tabs").addEventListener("click", e => {
@@ -732,3 +902,11 @@ renderAll();
 // show age of any stored report without overwriting edited fields
 applyMetar("dep", false);
 applyMetar("arr", false);
+// runway lists depend on the restored ICAO, so build them after restore
+syncAerodrome("dep"); syncAerodrome("arr");
+for (const w of ["dep","arr"]){
+  try {
+    const c = JSON.parse(localStorage.getItem(FX_KEY(w)) || "null");
+    if (c) showForecast(w, c, false);   // report it without re-applying
+  } catch(e){ /* ignore */ }
+}

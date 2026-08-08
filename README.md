@@ -72,6 +72,46 @@ tests with "or", but its predecessor EU-OPS 1.530 used "and", and an "or"
 reading would make route (2) less demanding than route (1). The app requires all
 three and shows each separately.
 
+## Aerodrome pre-fill
+
+Type an ICAO into either panel and pick a runway end. It fills **field
+elevation, QFU, slope and surface**. QFU comes from the runway designator,
+which is magnetic by definition, so no variation conversion is involved — it is
+rounded to 10°, so it can be up to 5° out, which is negligible for a wind
+component. Slope is derived from the two threshold elevations and is signed
+correctly for each panel (departure +uphill, arrival +downhill).
+
+Coverage is France, Germany, Benelux, Switzerland, Italy, Spain, UK, Austria,
+Portugal and Denmark — 1433 aerodromes, 1893 runways.
+
+**It never fills declared distances.** No free dataset contains TORA/TODA/ASDA/
+LDA; they are AIP figures and differ from physical runway length because of
+displaced thresholds, stopways and clearways. Physical length is shown as a
+read-only reference only. Take the declared distances from the AIP or VAC plate.
+
+The data is from [OurAirports](https://ourairports.com) (public domain) and is
+**crowd-sourced, not an official aeronautical source**. Treat it as a typing aid
+and verify it. To refresh or widen the coverage, regenerate `src/aerodromes.js`
+from that project's `airports.csv` and `runways.csv`.
+
+## Forecast for a planned time
+
+Set a planned time (UTC) and press **Fetch forecast**. It queries the free
+[Open-Meteo](https://open-meteo.com) hourly model for the aerodrome's
+coordinates and fills OAT, QNH and wind for that hour, setting the wind
+reference to True.
+
+This is the one part of the tool that needs a connection — it cannot work in
+flight, and it will not work from a file opened directly off disk. Results are
+cached, so a fetched forecast survives offline; on reload the cache is shown
+with its age but is **not** re-applied.
+
+It is **model output, not an observation**: no gusts, and temperature can be a
+couple of degrees out, which moves the take-off distance by a few percent. Use a
+METAR for the actual departure calculation whenever one exists. A TAF is not
+used, because TAFs give wind but carry neither QNH nor temperature, and many
+smaller aerodromes (LFSN among them) issue none at all.
+
 ## Weather entry
 
 Each panel has a **METAR paste box**. Paste the raw report (from AeroWeather or

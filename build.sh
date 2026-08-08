@@ -18,6 +18,7 @@ OUT=TB20-Performance.html
   echo '<script>'
   echo '"use strict";'
   cat src/data_block.js   # POH tables, transcribed from Section 5
+  cat src/aerodromes.js   # OurAirports pre-fill data (unofficial)
   cat src/helpers.js      # interpolation, units, formatting
   cat src/logic.js        # factoring bases, W&B, rendering
   echo '</script>'

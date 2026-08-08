@@ -20,6 +20,8 @@
     <h2>Departure</h2>
     <div class="grid">
       <div><label>Departure ICAO</label><input id="depIcao" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFSN" value=""></div>
+      <div><label>Runway</label><select id="depRwy" disabled><option value="">—</option></select></div>
+      <div><label>Planned time (UTC)</label><input id="depTime" type="datetime-local"></div>
       <div><label>Field elev (ft)</label><input id="elev" type="number" inputmode="numeric" value="0"></div>
       <div><label>QNH (hPa)</label><input id="qnh" type="number" inputmode="numeric" step="1" value="1013"></div>
       <div><label>OAT (°C)</label><input id="oat" type="number" inputmode="numeric" value="15"></div>
@@ -46,6 +48,11 @@
       <div id="fToda"><label>TODA (m)</label><input id="toda" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
       <div id="fAsda"><label>ASDA (m)</label><input id="asda" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
     </div>
+    <div id="depAdInfo"></div>
+    <div class="metar">
+      <button type="button" id="depFetch" class="btn">Fetch forecast for the planned time</button>
+      <div id="depFxOut"></div>
+    </div>
     <div class="metar">
       <label>Paste METAR — fills OAT, QNH and wind</label>
       <textarea id="depMetar" rows="2" spellcheck="false" autocapitalize="characters"
@@ -68,6 +75,8 @@
     <h2>Arrival</h2>
     <div class="grid">
       <div><label>Arrival ICAO</label><input id="arrIcao" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFST" value=""></div>
+      <div><label>Runway</label><select id="arrRwy" disabled><option value="">—</option></select></div>
+      <div><label>Planned time (UTC)</label><input id="arrTime" type="datetime-local"></div>
       <div><label>Field elev (ft)</label><input id="aElev" type="number" inputmode="numeric" value="0"></div>
       <div><label>QNH (hPa)</label><input id="aQnh" type="number" inputmode="numeric" step="1" value="1013"></div>
       <div><label>OAT (°C)</label><input id="aOat" type="number" inputmode="numeric" value="15"></div>
@@ -91,6 +100,11 @@
         <option value="soft">Soft ground / snow</option>
       </select></div>
       <div><label>LDA (m)</label><input id="lda" type="number" inputmode="numeric" value="0" placeholder="0 = skip"></div>
+    </div>
+    <div id="arrAdInfo"></div>
+    <div class="metar">
+      <button type="button" id="arrFetch" class="btn">Fetch forecast for the planned time</button>
+      <div id="arrFxOut"></div>
     </div>
     <div class="metar">
       <label>Paste METAR — fills OAT, QNH and wind</label>
