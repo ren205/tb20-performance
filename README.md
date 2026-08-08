@@ -1,0 +1,136 @@
+# TB20 Performance & Loading
+
+**Live:** https://ren205.github.io/tb20-performance/
+
+
+A single self-contained HTML page that computes take-off, landing, climb, cruise
+and weight & balance for the SOCATA TB20, from the tables in the aircraft's
+Pilot's Information Manual.
+
+**`TB20-Performance.html` is the tool.** Open it in any browser. It makes no
+network requests of any kind — no fonts, no scripts, no analytics — so it works
+with the iPad in airplane mode. Inputs persist in the browser's local storage.
+
+## Source data and copyright
+
+The performance and loading figures are transcribed from the SOCATA TB20
+Pilot's Information Manual (P/N T00.18430320E2), which is © SOCATA / Daher.
+That document states its contents may not be reproduced without written
+permission from the copyright owner. This repository is published by an owner
+of the aircraft for use with that aircraft. If you are the copyright holder and
+want it taken down, open an issue and it will be removed.
+
+No licence is granted for the transcribed manufacturer data. The surrounding
+code is provided as-is with no warranty of any kind.
+
+## Caution
+
+The source manual is the **Pilot's Information Manual**, which states on its own
+title page that it is non-official and must not be used as a substitute for the
+approved AFM. Every figure here is a transcription from 300 dpi scans, read
+visually rather than by OCR. **Spot-check the tables you actually depend on
+against the paper manual before flying them.**
+
+## What it covers
+
+| Tab | Source |
+|---|---|
+| Take-off | POH 5.8–5.9 (Fig 5.6 / 5.7) |
+| Landing | POH 5.30–5.31 (Fig 5.27 / 5.28) |
+| Climb | POH 5.10–5.13 (Fig 5.8–5.11) |
+| Cruise | POH 5.16–5.29 (Fig 5.13–5.26), both mixtures, 7 altitudes |
+| W & B | POH 2.9 (limits) and Fig 6.3 (arms) |
+| Reference | Stall speeds, airspeed calibration, holding, antenna penalties |
+
+Interpolation is linear on weight, pressure altitude and ISA deviation. Every
+tabulated corner reproduces the POH exactly. Beyond the tables, temperature and
+pressure altitude **extrapolate rather than clamp** — clamping would under-read
+distance on a hot or high day — and the app flags loudly when it does so.
+
+## Factoring bases
+
+Selectable on the take-off and landing tabs. Every factor applied is itemised on
+screen with its numeric value, its source citation and a running distance.
+
+- **Unfactored** — POH corrections only (surface and wind per POH 5.7). No margin.
+- **Part-NCO** — Part-NCO prescribes *no* performance factors; NCO.POL.110 requires
+  only that performance be "adequate", and its AMC/GM adds nothing. This basis
+  therefore applies the **UK CAA Safety Sense 09** advisory factors (×1.33
+  take-off, ×1.43 landing), labelled as advisory rather than regulatory.
+- **Part-CAT B** — CAT.POL.A.305 and .330. Take-off ×1.25 against TORA; with a
+  stopway or clearway declared this becomes ×1.00 TORA, ×1.15 TODA, ×1.30 ASDA.
+  Landing within 70% of LDA (×1.43). Wind credit limited to 50% of headwind and
+  150% of tailwind.
+
+Where the POH itself specifies a surface factor, that value is used in *every*
+basis — both AMC1-CAT.POL.A.305 and CAA SSL09 defer to the AFM ("unless
+otherwise specified in the AFM"). The regulatory tables are used only for
+surfaces the POH does not cover.
+
+**On CAT.POL.A.305(b)(2):** the published text separates the TORA, TODA and ASDA
+tests with "or", but its predecessor EU-OPS 1.530 used "and", and an "or"
+reading would make route (2) less demanding than route (1). The app requires all
+three and shows each separately.
+
+## Units and conventions
+
+- Altitudes and elevations in **feet**; runway distances in **metres**;
+  masses in **kg**; CG and arms in **mm**.
+- **QFU is magnetic.** METAR/TAF winds are true, ATIS/tower winds are magnetic,
+  so each aerodrome carries a wind-reference selector and a magnetic variation
+  field (east-positive). A true wind is converted before being resolved against
+  the QFU.
+- Departure slope is entered **positive uphill**, arrival slope **positive
+  downhill** — positive always means the penalising direction.
+- W&B uses the POH's own metric figures where it states them (CG limits, baggage
+  station), because the manual rounds them independently of the inch values
+  (it prints 0.913 m where 35.9 in is 911.9 mm). Seat and fuel arms exist only
+  in inches in Figure 6.3 and are converted; the arms table labels which is which.
+
+## Before you rely on the W&B tab
+
+The empty mass and arm default to the POH's **sample** aeroplane
+(846.5 kg at 961.6 mm). Replace them with the figures from your aircraft's
+current weighing form. If that form gives the arm in inches, multiply by 25.4.
+
+## Editing
+
+`src/` holds the page split into parts. After editing, run:
+
+    ./build.sh
+
+which concatenates them into `TB20-Performance.html` **and** `index.html`
+(identical content — Pages serves the latter at the site root) and syntax-checks
+the script block. Do not edit the built files directly; they are overwritten.
+
+To build, commit and push in one step:
+
+    ./publish.sh "what changed"
+
+A `pre-commit` hook rebuilds automatically, so the published page can never
+drift out of sync with `src/`.
+
+| File | Contents |
+|---|---|
+| `src/head.html` | Meta tags and stylesheet |
+| `src/body.html` | Markup for all six tabs |
+| `src/data_block.js` | The POH tables, transcribed |
+| `src/helpers.js` | Interpolation, unit conversion, formatting |
+| `src/logic.js` | Factoring bases, W&B, rendering, persistence |
+
+## Getting it onto the iPad offline
+
+A local file cannot be added to the iOS Home Screen — Safari only offers that
+for a URL, which is what the Pages link is for.
+
+Open **https://ren205.github.io/tb20-performance/** in Safari on the iPad, then
+Share → **Add to Home Screen**. It launches in its own window with no browser
+chrome, and because the page makes no network requests of any kind, it keeps
+working once loaded.
+
+**Verify it in airplane mode before relying on it.** iOS decides how long it
+keeps a web app cached; if it ever fails to load offline, open it once with a
+connection to refresh the cache before departure.
+
+Alternatively, AirDrop `TB20-Performance.html` and open it from the Files app —
+always offline, but no home-screen icon.

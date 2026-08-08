@@ -1,0 +1,5 @@
+#!/bin/sh
+# Rebuild before every commit so the served file can never drift from src/.
+set -e
+./build.sh >/dev/null
+git add TB20-Performance.html index.html

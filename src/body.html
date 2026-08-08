@@ -1,0 +1,314 @@
+
+<header>
+  <h1>SOCATA TB20 <span>— Performance &amp; Loading</span></h1>
+  <div class="warnbar">Computed from the Pilot's <em>Information</em> Manual (non-official). Cross-check against the approved AFM. Not a substitute for the POH.</div>
+</header>
+
+<nav id="tabs">
+  <button aria-selected="true" data-t="to">Take-off</button>
+  <button data-t="ldg">Landing</button>
+  <button data-t="clb">Climb</button>
+  <button data-t="crz">Cruise</button>
+  <button data-t="wb">W &amp; B</button>
+  <button data-t="ref">Reference</button>
+</nav>
+
+<main>
+  <!-- ===================== CONDITIONS ===================== -->
+  <!-- ===================== DEPARTURE ===================== -->
+  <div class="card" id="condDep">
+    <h2>Departure</h2>
+    <div class="grid">
+      <div><label>Departure ICAO</label><input id="depIcao" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFSN" value=""></div>
+      <div><label>Field elev (ft)</label><input id="elev" type="number" inputmode="numeric" value="0"></div>
+      <div><label>QNH (hPa)</label><input id="qnh" type="number" inputmode="numeric" step="1" value="1013"></div>
+      <div><label>OAT (°C)</label><input id="oat" type="number" inputmode="numeric" value="15"></div>
+      <div><label>Weight (kg)</label><input id="wt" type="number" inputmode="numeric" value="1320"></div>
+      <div><label>Runway QFU (°M)</label><input id="rwy" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind from (°)</label><input id="wdir" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind (kt)</label><input id="wspd" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind reference</label><select id="wref">
+        <option value="true">True (METAR/TAF)</option>
+        <option value="mag">Magnetic (ATIS/tower)</option>
+      </select></div>
+      <div><label>Mag var (°E +)</label><input id="varn" type="number" inputmode="decimal" step="0.1" value="0"></div>
+      <div><label>Slope % (+ up)</label><input id="slope" type="number" inputmode="decimal" step="0.1" value="0"></div>
+      <div><label>Surface</label><select id="surf">
+        <option value="tar_dry">Tar / paved, dry</option>
+        <option value="tar_wet">Tar / paved, wet</option>
+        <option value="hard_sod">Hard sod</option>
+        <option value="grass_short">Short grass, dry</option>
+        <option value="grass_wet">Grass, wet</option>
+        <option value="grass_high">High grass</option>
+        <option value="soft">Soft ground / snow</option>
+      </select></div>
+      <div><label>TORA (m)</label><input id="tora" type="number" inputmode="numeric" value="0" placeholder="0 = skip"></div>
+      <div id="fToda"><label>TODA (m)</label><input id="toda" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
+      <div id="fAsda"><label>ASDA (m)</label><input id="asda" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
+    </div>
+    <div class="derived">
+      <div>PA <b id="dPA">—</b></div>
+      <div>ISA dev <b id="dISA">—</b></div>
+      <div>Dens alt <b id="dDA">—</b></div>
+      <div>Head/tail <b id="dHW">—</b></div>
+      <div>Cross <b id="dXW">—</b></div>
+      <div>Weight <b id="dWT">—</b></div>
+    </div>
+    <div id="condFlags"></div>
+  </div>
+
+  <!-- ===================== ARRIVAL ===================== -->
+  <div class="card" id="condArr" hidden>
+    <h2>Arrival</h2>
+    <div class="grid">
+      <div><label>Arrival ICAO</label><input id="arrIcao" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFST" value=""></div>
+      <div><label>Field elev (ft)</label><input id="aElev" type="number" inputmode="numeric" value="0"></div>
+      <div><label>QNH (hPa)</label><input id="aQnh" type="number" inputmode="numeric" step="1" value="1013"></div>
+      <div><label>OAT (°C)</label><input id="aOat" type="number" inputmode="numeric" value="15"></div>
+      <div><label>Landing mass (kg)</label><input id="aWt" type="number" inputmode="numeric" value="1250"></div>
+      <div><label>Runway QFU (°M)</label><input id="aRwy" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind from (°)</label><input id="aWdir" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind (kt)</label><input id="aWspd" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind reference</label><select id="aWref">
+        <option value="true">True (METAR/TAF)</option>
+        <option value="mag">Magnetic (ATIS/tower)</option>
+      </select></div>
+      <div><label>Mag var (°E +)</label><input id="aVarn" type="number" inputmode="decimal" step="0.1" value="0"></div>
+      <div><label>Slope % (+ down)</label><input id="aSlope" type="number" inputmode="decimal" step="0.1" value="0"></div>
+      <div><label>Surface</label><select id="aSurf">
+        <option value="tar_dry">Tar / paved, dry</option>
+        <option value="tar_wet">Tar / paved, wet</option>
+        <option value="hard_sod">Hard sod</option>
+        <option value="grass_short">Short grass, dry</option>
+        <option value="grass_wet">Grass, wet</option>
+        <option value="grass_high">High grass</option>
+        <option value="soft">Soft ground / snow</option>
+      </select></div>
+      <div><label>LDA (m)</label><input id="lda" type="number" inputmode="numeric" value="0" placeholder="0 = skip"></div>
+    </div>
+    <div class="derived">
+      <div>PA <b id="aDPA">—</b></div>
+      <div>ISA dev <b id="aDISA">—</b></div>
+      <div>Dens alt <b id="aDDA">—</b></div>
+      <div>Head/tail <b id="aDHW">—</b></div>
+      <div>Cross <b id="aDXW">—</b></div>
+      <div>Mass <b id="aDWT">—</b></div>
+    </div>
+    <div style="margin-top:10px"><button type="button" id="copyDep"
+      style="width:100%;background:var(--panel2);color:var(--accent);border:1px solid var(--line);
+      border-radius:9px;padding:11px;font-size:14px;font-weight:600;cursor:pointer">
+      Copy weather &amp; wind from departure</button></div>
+    <div id="aCondFlags"></div>
+  </div>
+
+  <!-- ===================== REGULATORY BASIS ===================== -->
+  <div class="card" id="regCard">
+    <h2>Factoring basis</h2>
+    <div class="seg" id="regSeg">
+      <button aria-pressed="true" data-r="none">Unfactored</button>
+      <button data-r="nco">Part-NCO</button>
+      <button data-r="cat">Part-CAT B</button>
+    </div>
+    <div id="regNote"></div>
+  </div>
+
+  <!-- ===================== TAKE-OFF ===================== -->
+  <section id="to">
+    <div class="card">
+      <h2 id="toHead">Take-off distance</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">To clear 50 ft — factored</div><div class="val" id="to50">—</div></div>
+        <div class="big"><div class="lbl">Ground roll — factored</div><div class="val" id="toRoll">—</div></div>
+        <div class="big"><div class="lbl">POH unfactored, 50 ft</div><div class="val" id="toRaw">—</div></div>
+        <div class="big"><div class="lbl">Lift-off speed</div><div class="val" id="toVlo">—</div></div>
+        <div class="big"><div class="lbl">Speed over 50 ft</div><div class="val" id="toV50">—</div></div>
+      </div>
+      <div class="fx" id="toFx"></div>
+      <div id="toFlags"></div>
+    </div>
+    <div class="card">
+      <h2>Runway requirement</h2>
+      <div class="scroll"><table id="toChecks"></table></div>
+      <div id="toChkNote" class="note" style="margin-top:9px"></div>
+    </div>
+    <div class="card"><h2>Conditions assumed</h2>
+      <div class="note">Flaps take-off (10°) · full low pitch, full throttle, 2575 RPM · tar dry runway.
+      Table weights 1075 / 1400 kg, PA 0–10 000 ft, ISA−20 / ISA / ISA+20 — interpolated.<br><br>
+      The POH quotes a <b>lift-off</b> speed and a <b>speed over 50 ft</b>; it publishes no Vr for the TB20,
+      so these carry the manual's own names rather than being relabelled.</div>
+    </div>
+  </section>
+
+  <!-- ===================== LANDING ===================== -->
+  <section id="ldg" hidden>
+    <div class="card">
+      <h2 id="ldHead">Landing distance</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">From 50 ft — factored</div><div class="val" id="ld50">—</div></div>
+        <div class="big"><div class="lbl">Ground roll — factored</div><div class="val" id="ldRoll">—</div></div>
+        <div class="big"><div class="lbl">POH unfactored, 50 ft</div><div class="val" id="ldRaw">—</div></div>
+        <div class="big"><div class="lbl">Speed over 50 ft</div><div class="val" id="ldV">—</div></div>
+      </div>
+      <div class="fx" id="ldFx"></div>
+      <div id="ldFlags"></div>
+    </div>
+    <div class="card">
+      <h2>Runway requirement</h2>
+      <div class="scroll"><table id="ldChecks"></table></div>
+    </div>
+    <div class="card"><h2>Conditions assumed</h2>
+      <div class="note">Flaps landing · tar dry runway. Table weights 1075 / 1400 kg — interpolated.
+      Landing mass is entered in the Arrival panel — use the W&amp;B tab to work it out after trip fuel.
+Arrival slope is entered as <b>positive downhill</b>, the direction that lengthens a landing.</div>
+    </div>
+  </section>
+
+  <!-- ===================== CLIMB ===================== -->
+  <section id="clb" hidden>
+    <div class="card">
+      <h2>Rate of climb — at current conditions</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">Rate of climb</div><div class="val" id="roc">—</div></div>
+        <div class="big"><div class="lbl">Climb speed</div><div class="val" id="clbV">—</div></div>
+        <div class="big"><div class="lbl">Gradient</div><div class="val" id="clbG">—</div></div>
+      </div>
+      <div id="clbFlags"></div>
+      <div class="note" style="margin-top:10px">Gear up, flaps retracted, full rich, 2575 RPM full throttle.
+      Alternate air open: −150 ft/min. Not subject to the factoring basis — the POH climb table is used raw.</div>
+    </div>
+    <div class="card">
+      <h2>Climb — time, fuel &amp; distance</h2>
+      <div class="grid">
+        <div><label>From PA (ft)</label><input id="cFrom" type="number" inputmode="numeric" value="0"></div>
+        <div><label>To PA (ft)</label><input id="cTo" type="number" inputmode="numeric" value="8000"></div>
+      </div>
+      <div class="out" style="margin-top:11px">
+        <div class="big"><div class="lbl">Time</div><div class="val" id="cT">—</div></div>
+        <div class="big"><div class="lbl">Fuel</div><div class="val" id="cF">—</div></div>
+        <div class="big" style="grid-column:1/-1"><div class="lbl">Still-air distance</div><div class="val" id="cD">—</div></div>
+      </div>
+      <div id="cFlags"></div>
+    </div>
+  </section>
+
+  <!-- ===================== CRUISE ===================== -->
+  <section id="crz" hidden>
+    <div class="card">
+      <h2>Cruise setting</h2>
+      <div class="grid">
+        <div><label>Cruise PA (ft)</label><input id="crzAlt" type="number" inputmode="numeric" value="6500"></div>
+        <div><label>Usable fuel (L)</label><input id="crzFuel" type="number" inputmode="decimal" value="326"></div>
+        <div><label>Leg distance (NM)</label><input id="crzDist" type="number" inputmode="numeric" value="0" placeholder="0 = skip"></div>
+        <div><label>Reserve (min)</label><input id="crzRes" type="number" inputmode="numeric" value="45"></div>
+      </div>
+      <div style="margin-top:11px" class="seg" id="mixSeg">
+        <button aria-pressed="true" data-m="bestPower">Best power</button>
+        <button data-m="bestEconomy">Best economy</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Available settings</h2>
+      <div class="scroll"><table id="crzTable"></table></div>
+      <div id="crzFlags"></div>
+      <div class="note" style="margin-top:10px">POH level-flight tables at <b>1335 kg</b>, no antennas or
+      external lights. Interpolated between tabulated altitudes (500–12 500 ft). A typical IFR antenna fit
+      costs about −3.2 kt and −2% range. Endurance and range exclude climb, descent and taxi.</div>
+    </div>
+  </section>
+
+  <!-- ===================== WEIGHT & BALANCE ===================== -->
+  <section id="wb" hidden>
+    <div class="card">
+      <h2>Loading — all masses in kg</h2>
+      <div class="grid">
+        <div><label>Empty mass (kg)</label><input id="wbEW" type="number" inputmode="decimal" value="846.5"></div>
+        <div><label>Empty arm (mm)</label><input id="wbEA" type="number" inputmode="decimal" step="0.1" value="961.6"></div>
+        <div><label>Pilot (kg)</label><input id="wbP" type="number" inputmode="decimal" value="80"></div>
+        <div><label>Front pax (kg)</label><input id="wbFP" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Rear pax (kg)</label><input id="wbR" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Baggage (kg)</label><input id="wbB" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Fuel (L)</label><input id="wbF" type="number" inputmode="decimal" value="200"></div>
+        <div><label>Trip fuel (L)</label><input id="wbTF" type="number" inputmode="decimal" value="0"></div>
+      </div>
+      <div style="margin-top:10px">
+        <label class="chk"><input type="checkbox" id="wbBackoff">Front seats have the 2-in back-off option (0800.xxM) — arm 47.44 in</label>
+      </div>
+      <div class="note" style="margin-top:9px">Empty mass and arm <b>must</b> come from your aircraft's current
+      weighing form — the defaults are the POH's sample aeroplane (846.5 kg at 961.6 mm) and are almost
+      certainly not yours. If your weighing form gives the arm in inches, multiply by 25.4.</div>
+    </div>
+
+    <div class="card">
+      <h2>Result</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">Take-off mass</div><div class="val" id="wbTOW">—</div></div>
+        <div class="big"><div class="lbl">CG at take-off</div><div class="val" id="wbCG">—</div></div>
+        <div class="big"><div class="lbl">CG limits at that mass</div><div class="val" id="wbLim">—</div></div>
+      </div>
+      <div id="wbFlags"></div>
+      <div class="scroll" style="margin-top:12px"><table id="wbTable"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Envelope</h2>
+      <div id="wbChart"></div>
+      <div class="note" style="margin-top:8px">Datum is the <b>front face of the firewall</b>. Forward limit varies
+      in a straight line between 913 mm at 1000 kg, 949 mm at 1250 kg and 1071 mm at 1400 kg; aft limit is
+      1205 mm at all masses (landing gear extended). These are the POH's own metric figures, which are
+      rounded independently of the inch values rather than converted from them.
+      ● take-off, ○ after trip fuel.</div>
+    </div>
+
+    <div class="card"><h2>Arms and limits used</h2>
+      <div class="note" style="margin-bottom:10px">The POH states the CG limits and the baggage station in both units; those metric values are used as printed. The seat and fuel arms appear only in inches in Figure 6.3 and are converted. Figure 6.3 also uses a baggage arm of 102.54 in (2604 mm) where Section 6.3 states 102.36 in (2.600 m) — the dual-unit figure is used, a difference of under 0.2 mm of CG.</div>
+      <div class="scroll"><table id="wbRef"></table></div>
+    </div>
+  </section>
+
+  <!-- ===================== REFERENCE ===================== -->
+  <section id="ref" hidden>
+    <div class="card"><h2>Stall speeds — KIAS, 1400 kg, power off</h2>
+      <div class="scroll"><table>
+        <tr><th>Configuration</th><th>0°</th><th>30°</th><th>45°</th></tr>
+        <tr><td>Flaps up, gear up</td><td>70</td><td>75</td><td>83</td></tr>
+        <tr><td>Flaps T/O, gear up or dn</td><td>65</td><td>70</td><td>77</td></tr>
+        <tr><td>Flaps LDG, gear down</td><td>59</td><td>63</td><td>70</td></tr>
+      </table></div>
+    </div>
+    <div class="card"><h2>Factoring bases — every value this app can apply</h2>
+      <div class="scroll"><table id="regTable"></table></div>
+      <div id="regRefNote" class="note" style="margin-top:10px"></div>
+    </div>
+    <div class="card"><h2>Airspeed calibration — normal static</h2>
+      <div class="scroll"><table id="calTable"></table></div>
+    </div>
+    <div class="card"><h2>Holding</h2>
+      <div class="note">45% BHP · 1800 RPM · MP 21.5 in.Hg, subtract 0.3 per 1000 ft ·
+      consumption <b>8.5 US gal/h</b> (32 L/h).</div>
+    </div>
+    <div class="card"><h2>Antenna &amp; light penalties (cruise)</h2>
+      <div class="scroll"><table id="antTable"></table></div>
+    </div>
+    <div class="card"><h2>POH corrections (Section 5.7)</h2>
+      <div class="note">
+        <b>Runway:</b> hard sod +7% · short grass +10% · high grass +25%.<br>
+        <b>Wind:</b> −10% per 10 kt headwind · <b>+30% per 10 kt tailwind</b>.<br>
+        <b>Alternate air:</b> take-off distance +10% · climb −150 ft/min · cruise +1 in.Hg for rated power.<br>
+        <b>Max performance altitude:</b> 18 000 ft (ISA, 100 ft/min, MTOW).<br>
+        <b>Demonstrated crosswind:</b> 25 kt.
+      </div>
+    </div>
+    <div class="card"><h2>Sources</h2>
+      <div class="note">
+        <b>Aircraft data —</b> SOCATA TB20 Pilot's Information Manual, from S/N 948, P/N T00.18430320E2,
+        June 30 1988 (rev. 5–11). Section 2 pages 2.9–2.10, Section 5 pages 5.3–5.31, Section 6 pages 6.3–6.11.
+        The manual states it is non-official and must not substitute for the approved manual.<br><br>
+        <b>Part-CAT —</b> Commission Regulation (EU) 965/2012 Annex IV, CAT.POL.A.305 / .330 / .335 and
+        AMC1-CAT.POL.A.305 / AMC1-CAT.POL.A.330 (performance class B).<br><br>
+        <b>Part-NCO —</b> Annex VII, NCO.POL.100 and NCO.POL.110.<br><br>
+        <b>Advisory factors —</b> UK CAA Safety Sense leaflet 09, <em>Weight, balance and performance</em>,
+        August 2024.
+      </div>
+    </div>
+  </section>
+</main>

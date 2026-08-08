@@ -1,0 +1,81 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TB20 Perf">
+<meta name="theme-color" content="#0d1117">
+<title>TB20 Performance</title>
+
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c232c; --line:#2d3540;
+  --ink:#e6edf3; --dim:#8b949e; --accent:#58a6ff; --good:#3fb950;
+  --warn:#d29922; --bad:#f85149; --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
+body{padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;z-index:30;background:rgba(13,17,23,.96);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top) + 10px) 14px 10px}
+h1{margin:0;font-size:17px;font-weight:650;letter-spacing:.2px}
+h1 span{color:var(--dim);font-weight:400;font-size:13px}
+.warnbar{margin-top:6px;font-size:11.5px;color:var(--warn);line-height:1.3}
+nav{display:flex;gap:4px;padding:8px 10px;overflow-x:auto;position:sticky;top:0;z-index:25;
+  background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:var(--panel);color:var(--dim);border:1px solid var(--line);
+  border-radius:9px;padding:9px 15px;font-size:14px;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--accent);color:#04121f;border-color:var(--accent)}
+main{padding:12px 12px 40px;max-width:860px;margin:0 auto}
+section[hidden]{display:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:12px}
+.card h2{margin:0 0 10px;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+label{display:block;font-size:11.5px;color:var(--dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+input,select{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:11px 10px;font:600 17px/1.2 var(--mono);appearance:none}
+select{font-family:inherit;font-size:15px}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.chk{display:flex;align-items:center;gap:9px;padding:11px 10px;background:var(--panel2);
+  border:1px solid var(--line);border-radius:9px;font-size:14px;cursor:pointer}
+.chk input{width:20px;height:20px;flex:0 0 auto;accent-color:var(--accent)}
+.derived{display:flex;gap:14px;flex-wrap:wrap;margin-top:11px;padding-top:11px;
+  border-top:1px solid var(--line);font-size:13px;color:var(--dim)}
+.derived b{color:var(--ink);font-family:var(--mono);font-weight:600}
+.out{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.big{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:13px}
+.big .lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.big .val{font:700 30px/1.15 var(--mono);margin-top:5px;font-variant-numeric:tabular-nums}
+.big .val small{font-size:14px;color:var(--dim);font-weight:500}
+.big.hero{grid-column:1/-1;border-color:var(--accent)}
+.big.hero .val{font-size:38px;color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+td:first-child,th:first-child{text-align:left}
+td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr.rec td{background:rgba(88,166,255,.09)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.flag{border-radius:9px;padding:10px 12px;font-size:13px;margin-top:10px;line-height:1.4}
+.flag.ok{background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);color:var(--good)}
+.flag.warn{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);color:var(--warn)}
+.flag.bad{background:rgba(248,81,73,.13);border:1px solid rgba(248,81,73,.45);color:var(--bad)}
+.flag.info{background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.35);color:var(--accent)}
+.flag > b:first-child{display:block;margin-bottom:2px}
+.note{font-size:12px;color:var(--dim);line-height:1.5}
+.note code,.note b{font-family:var(--mono);color:var(--ink)}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;background:var(--panel2);color:var(--dim);border:0;padding:10px 6px;
+  font-size:13.5px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:#04121f}
+/* factor ledger */
+.fx{margin-top:11px;font-size:13px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.fx div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+.fx div:last-child{border-bottom:0;border-top:1px solid var(--accent);margin-top:3px;padding-top:8px;
+  font-weight:700;color:var(--accent)}
+.fx .src,td .src{color:var(--dim);font-size:10.5px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.03em}
+.fx .f{color:var(--ink);white-space:nowrap}
+.fx .n{color:var(--dim)}
+svg{width:100%;height:auto;display:block}
+</style>

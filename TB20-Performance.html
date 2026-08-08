@@ -1,0 +1,1148 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TB20 Perf">
+<meta name="theme-color" content="#0d1117">
+<title>TB20 Performance</title>
+
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c232c; --line:#2d3540;
+  --ink:#e6edf3; --dim:#8b949e; --accent:#58a6ff; --good:#3fb950;
+  --warn:#d29922; --bad:#f85149; --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
+body{padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;z-index:30;background:rgba(13,17,23,.96);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top) + 10px) 14px 10px}
+h1{margin:0;font-size:17px;font-weight:650;letter-spacing:.2px}
+h1 span{color:var(--dim);font-weight:400;font-size:13px}
+.warnbar{margin-top:6px;font-size:11.5px;color:var(--warn);line-height:1.3}
+nav{display:flex;gap:4px;padding:8px 10px;overflow-x:auto;position:sticky;top:0;z-index:25;
+  background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:var(--panel);color:var(--dim);border:1px solid var(--line);
+  border-radius:9px;padding:9px 15px;font-size:14px;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--accent);color:#04121f;border-color:var(--accent)}
+main{padding:12px 12px 40px;max-width:860px;margin:0 auto}
+section[hidden]{display:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:12px}
+.card h2{margin:0 0 10px;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+label{display:block;font-size:11.5px;color:var(--dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+input,select{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:11px 10px;font:600 17px/1.2 var(--mono);appearance:none}
+select{font-family:inherit;font-size:15px}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.chk{display:flex;align-items:center;gap:9px;padding:11px 10px;background:var(--panel2);
+  border:1px solid var(--line);border-radius:9px;font-size:14px;cursor:pointer}
+.chk input{width:20px;height:20px;flex:0 0 auto;accent-color:var(--accent)}
+.derived{display:flex;gap:14px;flex-wrap:wrap;margin-top:11px;padding-top:11px;
+  border-top:1px solid var(--line);font-size:13px;color:var(--dim)}
+.derived b{color:var(--ink);font-family:var(--mono);font-weight:600}
+.out{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.big{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:13px}
+.big .lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.big .val{font:700 30px/1.15 var(--mono);margin-top:5px;font-variant-numeric:tabular-nums}
+.big .val small{font-size:14px;color:var(--dim);font-weight:500}
+.big.hero{grid-column:1/-1;border-color:var(--accent)}
+.big.hero .val{font-size:38px;color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+td:first-child,th:first-child{text-align:left}
+td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr.rec td{background:rgba(88,166,255,.09)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.flag{border-radius:9px;padding:10px 12px;font-size:13px;margin-top:10px;line-height:1.4}
+.flag.ok{background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.4);color:var(--good)}
+.flag.warn{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);color:var(--warn)}
+.flag.bad{background:rgba(248,81,73,.13);border:1px solid rgba(248,81,73,.45);color:var(--bad)}
+.flag.info{background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.35);color:var(--accent)}
+.flag > b:first-child{display:block;margin-bottom:2px}
+.note{font-size:12px;color:var(--dim);line-height:1.5}
+.note code,.note b{font-family:var(--mono);color:var(--ink)}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;background:var(--panel2);color:var(--dim);border:0;padding:10px 6px;
+  font-size:13.5px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:#04121f}
+/* factor ledger */
+.fx{margin-top:11px;font-size:13px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.fx div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+.fx div:last-child{border-bottom:0;border-top:1px solid var(--accent);margin-top:3px;padding-top:8px;
+  font-weight:700;color:var(--accent)}
+.fx .src,td .src{color:var(--dim);font-size:10.5px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.03em}
+.fx .f{color:var(--ink);white-space:nowrap}
+.fx .n{color:var(--dim)}
+svg{width:100%;height:auto;display:block}
+</style>
+
+<header>
+  <h1>SOCATA TB20 <span>— Performance &amp; Loading</span></h1>
+  <div class="warnbar">Computed from the Pilot's <em>Information</em> Manual (non-official). Cross-check against the approved AFM. Not a substitute for the POH.</div>
+</header>
+
+<nav id="tabs">
+  <button aria-selected="true" data-t="to">Take-off</button>
+  <button data-t="ldg">Landing</button>
+  <button data-t="clb">Climb</button>
+  <button data-t="crz">Cruise</button>
+  <button data-t="wb">W &amp; B</button>
+  <button data-t="ref">Reference</button>
+</nav>
+
+<main>
+  <!-- ===================== CONDITIONS ===================== -->
+  <!-- ===================== DEPARTURE ===================== -->
+  <div class="card" id="condDep">
+    <h2>Departure</h2>
+    <div class="grid">
+      <div><label>Departure ICAO</label><input id="depIcao" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFSN" value=""></div>
+      <div><label>Field elev (ft)</label><input id="elev" type="number" inputmode="numeric" value="0"></div>
+      <div><label>QNH (hPa)</label><input id="qnh" type="number" inputmode="numeric" step="1" value="1013"></div>
+      <div><label>OAT (°C)</label><input id="oat" type="number" inputmode="numeric" value="15"></div>
+      <div><label>Weight (kg)</label><input id="wt" type="number" inputmode="numeric" value="1320"></div>
+      <div><label>Runway QFU (°M)</label><input id="rwy" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind from (°)</label><input id="wdir" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind (kt)</label><input id="wspd" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind reference</label><select id="wref">
+        <option value="true">True (METAR/TAF)</option>
+        <option value="mag">Magnetic (ATIS/tower)</option>
+      </select></div>
+      <div><label>Mag var (°E +)</label><input id="varn" type="number" inputmode="decimal" step="0.1" value="0"></div>
+      <div><label>Slope % (+ up)</label><input id="slope" type="number" inputmode="decimal" step="0.1" value="0"></div>
+      <div><label>Surface</label><select id="surf">
+        <option value="tar_dry">Tar / paved, dry</option>
+        <option value="tar_wet">Tar / paved, wet</option>
+        <option value="hard_sod">Hard sod</option>
+        <option value="grass_short">Short grass, dry</option>
+        <option value="grass_wet">Grass, wet</option>
+        <option value="grass_high">High grass</option>
+        <option value="soft">Soft ground / snow</option>
+      </select></div>
+      <div><label>TORA (m)</label><input id="tora" type="number" inputmode="numeric" value="0" placeholder="0 = skip"></div>
+      <div id="fToda"><label>TODA (m)</label><input id="toda" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
+      <div id="fAsda"><label>ASDA (m)</label><input id="asda" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
+    </div>
+    <div class="derived">
+      <div>PA <b id="dPA">—</b></div>
+      <div>ISA dev <b id="dISA">—</b></div>
+      <div>Dens alt <b id="dDA">—</b></div>
+      <div>Head/tail <b id="dHW">—</b></div>
+      <div>Cross <b id="dXW">—</b></div>
+      <div>Weight <b id="dWT">—</b></div>
+    </div>
+    <div id="condFlags"></div>
+  </div>
+
+  <!-- ===================== ARRIVAL ===================== -->
+  <div class="card" id="condArr" hidden>
+    <h2>Arrival</h2>
+    <div class="grid">
+      <div><label>Arrival ICAO</label><input id="arrIcao" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFST" value=""></div>
+      <div><label>Field elev (ft)</label><input id="aElev" type="number" inputmode="numeric" value="0"></div>
+      <div><label>QNH (hPa)</label><input id="aQnh" type="number" inputmode="numeric" step="1" value="1013"></div>
+      <div><label>OAT (°C)</label><input id="aOat" type="number" inputmode="numeric" value="15"></div>
+      <div><label>Landing mass (kg)</label><input id="aWt" type="number" inputmode="numeric" value="1250"></div>
+      <div><label>Runway QFU (°M)</label><input id="aRwy" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind from (°)</label><input id="aWdir" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind (kt)</label><input id="aWspd" type="number" inputmode="numeric" value="0"></div>
+      <div><label>Wind reference</label><select id="aWref">
+        <option value="true">True (METAR/TAF)</option>
+        <option value="mag">Magnetic (ATIS/tower)</option>
+      </select></div>
+      <div><label>Mag var (°E +)</label><input id="aVarn" type="number" inputmode="decimal" step="0.1" value="0"></div>
+      <div><label>Slope % (+ down)</label><input id="aSlope" type="number" inputmode="decimal" step="0.1" value="0"></div>
+      <div><label>Surface</label><select id="aSurf">
+        <option value="tar_dry">Tar / paved, dry</option>
+        <option value="tar_wet">Tar / paved, wet</option>
+        <option value="hard_sod">Hard sod</option>
+        <option value="grass_short">Short grass, dry</option>
+        <option value="grass_wet">Grass, wet</option>
+        <option value="grass_high">High grass</option>
+        <option value="soft">Soft ground / snow</option>
+      </select></div>
+      <div><label>LDA (m)</label><input id="lda" type="number" inputmode="numeric" value="0" placeholder="0 = skip"></div>
+    </div>
+    <div class="derived">
+      <div>PA <b id="aDPA">—</b></div>
+      <div>ISA dev <b id="aDISA">—</b></div>
+      <div>Dens alt <b id="aDDA">—</b></div>
+      <div>Head/tail <b id="aDHW">—</b></div>
+      <div>Cross <b id="aDXW">—</b></div>
+      <div>Mass <b id="aDWT">—</b></div>
+    </div>
+    <div style="margin-top:10px"><button type="button" id="copyDep"
+      style="width:100%;background:var(--panel2);color:var(--accent);border:1px solid var(--line);
+      border-radius:9px;padding:11px;font-size:14px;font-weight:600;cursor:pointer">
+      Copy weather &amp; wind from departure</button></div>
+    <div id="aCondFlags"></div>
+  </div>
+
+  <!-- ===================== REGULATORY BASIS ===================== -->
+  <div class="card" id="regCard">
+    <h2>Factoring basis</h2>
+    <div class="seg" id="regSeg">
+      <button aria-pressed="true" data-r="none">Unfactored</button>
+      <button data-r="nco">Part-NCO</button>
+      <button data-r="cat">Part-CAT B</button>
+    </div>
+    <div id="regNote"></div>
+  </div>
+
+  <!-- ===================== TAKE-OFF ===================== -->
+  <section id="to">
+    <div class="card">
+      <h2 id="toHead">Take-off distance</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">To clear 50 ft — factored</div><div class="val" id="to50">—</div></div>
+        <div class="big"><div class="lbl">Ground roll — factored</div><div class="val" id="toRoll">—</div></div>
+        <div class="big"><div class="lbl">POH unfactored, 50 ft</div><div class="val" id="toRaw">—</div></div>
+        <div class="big"><div class="lbl">Lift-off speed</div><div class="val" id="toVlo">—</div></div>
+        <div class="big"><div class="lbl">Speed over 50 ft</div><div class="val" id="toV50">—</div></div>
+      </div>
+      <div class="fx" id="toFx"></div>
+      <div id="toFlags"></div>
+    </div>
+    <div class="card">
+      <h2>Runway requirement</h2>
+      <div class="scroll"><table id="toChecks"></table></div>
+      <div id="toChkNote" class="note" style="margin-top:9px"></div>
+    </div>
+    <div class="card"><h2>Conditions assumed</h2>
+      <div class="note">Flaps take-off (10°) · full low pitch, full throttle, 2575 RPM · tar dry runway.
+      Table weights 1075 / 1400 kg, PA 0–10 000 ft, ISA−20 / ISA / ISA+20 — interpolated.<br><br>
+      The POH quotes a <b>lift-off</b> speed and a <b>speed over 50 ft</b>; it publishes no Vr for the TB20,
+      so these carry the manual's own names rather than being relabelled.</div>
+    </div>
+  </section>
+
+  <!-- ===================== LANDING ===================== -->
+  <section id="ldg" hidden>
+    <div class="card">
+      <h2 id="ldHead">Landing distance</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">From 50 ft — factored</div><div class="val" id="ld50">—</div></div>
+        <div class="big"><div class="lbl">Ground roll — factored</div><div class="val" id="ldRoll">—</div></div>
+        <div class="big"><div class="lbl">POH unfactored, 50 ft</div><div class="val" id="ldRaw">—</div></div>
+        <div class="big"><div class="lbl">Speed over 50 ft</div><div class="val" id="ldV">—</div></div>
+      </div>
+      <div class="fx" id="ldFx"></div>
+      <div id="ldFlags"></div>
+    </div>
+    <div class="card">
+      <h2>Runway requirement</h2>
+      <div class="scroll"><table id="ldChecks"></table></div>
+    </div>
+    <div class="card"><h2>Conditions assumed</h2>
+      <div class="note">Flaps landing · tar dry runway. Table weights 1075 / 1400 kg — interpolated.
+      Landing mass is entered in the Arrival panel — use the W&amp;B tab to work it out after trip fuel.
+Arrival slope is entered as <b>positive downhill</b>, the direction that lengthens a landing.</div>
+    </div>
+  </section>
+
+  <!-- ===================== CLIMB ===================== -->
+  <section id="clb" hidden>
+    <div class="card">
+      <h2>Rate of climb — at current conditions</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">Rate of climb</div><div class="val" id="roc">—</div></div>
+        <div class="big"><div class="lbl">Climb speed</div><div class="val" id="clbV">—</div></div>
+        <div class="big"><div class="lbl">Gradient</div><div class="val" id="clbG">—</div></div>
+      </div>
+      <div id="clbFlags"></div>
+      <div class="note" style="margin-top:10px">Gear up, flaps retracted, full rich, 2575 RPM full throttle.
+      Alternate air open: −150 ft/min. Not subject to the factoring basis — the POH climb table is used raw.</div>
+    </div>
+    <div class="card">
+      <h2>Climb — time, fuel &amp; distance</h2>
+      <div class="grid">
+        <div><label>From PA (ft)</label><input id="cFrom" type="number" inputmode="numeric" value="0"></div>
+        <div><label>To PA (ft)</label><input id="cTo" type="number" inputmode="numeric" value="8000"></div>
+      </div>
+      <div class="out" style="margin-top:11px">
+        <div class="big"><div class="lbl">Time</div><div class="val" id="cT">—</div></div>
+        <div class="big"><div class="lbl">Fuel</div><div class="val" id="cF">—</div></div>
+        <div class="big" style="grid-column:1/-1"><div class="lbl">Still-air distance</div><div class="val" id="cD">—</div></div>
+      </div>
+      <div id="cFlags"></div>
+    </div>
+  </section>
+
+  <!-- ===================== CRUISE ===================== -->
+  <section id="crz" hidden>
+    <div class="card">
+      <h2>Cruise setting</h2>
+      <div class="grid">
+        <div><label>Cruise PA (ft)</label><input id="crzAlt" type="number" inputmode="numeric" value="6500"></div>
+        <div><label>Usable fuel (L)</label><input id="crzFuel" type="number" inputmode="decimal" value="326"></div>
+        <div><label>Leg distance (NM)</label><input id="crzDist" type="number" inputmode="numeric" value="0" placeholder="0 = skip"></div>
+        <div><label>Reserve (min)</label><input id="crzRes" type="number" inputmode="numeric" value="45"></div>
+      </div>
+      <div style="margin-top:11px" class="seg" id="mixSeg">
+        <button aria-pressed="true" data-m="bestPower">Best power</button>
+        <button data-m="bestEconomy">Best economy</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Available settings</h2>
+      <div class="scroll"><table id="crzTable"></table></div>
+      <div id="crzFlags"></div>
+      <div class="note" style="margin-top:10px">POH level-flight tables at <b>1335 kg</b>, no antennas or
+      external lights. Interpolated between tabulated altitudes (500–12 500 ft). A typical IFR antenna fit
+      costs about −3.2 kt and −2% range. Endurance and range exclude climb, descent and taxi.</div>
+    </div>
+  </section>
+
+  <!-- ===================== WEIGHT & BALANCE ===================== -->
+  <section id="wb" hidden>
+    <div class="card">
+      <h2>Loading — all masses in kg</h2>
+      <div class="grid">
+        <div><label>Empty mass (kg)</label><input id="wbEW" type="number" inputmode="decimal" value="846.5"></div>
+        <div><label>Empty arm (mm)</label><input id="wbEA" type="number" inputmode="decimal" step="0.1" value="961.6"></div>
+        <div><label>Pilot (kg)</label><input id="wbP" type="number" inputmode="decimal" value="80"></div>
+        <div><label>Front pax (kg)</label><input id="wbFP" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Rear pax (kg)</label><input id="wbR" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Baggage (kg)</label><input id="wbB" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Fuel (L)</label><input id="wbF" type="number" inputmode="decimal" value="200"></div>
+        <div><label>Trip fuel (L)</label><input id="wbTF" type="number" inputmode="decimal" value="0"></div>
+      </div>
+      <div style="margin-top:10px">
+        <label class="chk"><input type="checkbox" id="wbBackoff">Front seats have the 2-in back-off option (0800.xxM) — arm 47.44 in</label>
+      </div>
+      <div class="note" style="margin-top:9px">Empty mass and arm <b>must</b> come from your aircraft's current
+      weighing form — the defaults are the POH's sample aeroplane (846.5 kg at 961.6 mm) and are almost
+      certainly not yours. If your weighing form gives the arm in inches, multiply by 25.4.</div>
+    </div>
+
+    <div class="card">
+      <h2>Result</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">Take-off mass</div><div class="val" id="wbTOW">—</div></div>
+        <div class="big"><div class="lbl">CG at take-off</div><div class="val" id="wbCG">—</div></div>
+        <div class="big"><div class="lbl">CG limits at that mass</div><div class="val" id="wbLim">—</div></div>
+      </div>
+      <div id="wbFlags"></div>
+      <div class="scroll" style="margin-top:12px"><table id="wbTable"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Envelope</h2>
+      <div id="wbChart"></div>
+      <div class="note" style="margin-top:8px">Datum is the <b>front face of the firewall</b>. Forward limit varies
+      in a straight line between 913 mm at 1000 kg, 949 mm at 1250 kg and 1071 mm at 1400 kg; aft limit is
+      1205 mm at all masses (landing gear extended). These are the POH's own metric figures, which are
+      rounded independently of the inch values rather than converted from them.
+      ● take-off, ○ after trip fuel.</div>
+    </div>
+
+    <div class="card"><h2>Arms and limits used</h2>
+      <div class="note" style="margin-bottom:10px">The POH states the CG limits and the baggage station in both units; those metric values are used as printed. The seat and fuel arms appear only in inches in Figure 6.3 and are converted. Figure 6.3 also uses a baggage arm of 102.54 in (2604 mm) where Section 6.3 states 102.36 in (2.600 m) — the dual-unit figure is used, a difference of under 0.2 mm of CG.</div>
+      <div class="scroll"><table id="wbRef"></table></div>
+    </div>
+  </section>
+
+  <!-- ===================== REFERENCE ===================== -->
+  <section id="ref" hidden>
+    <div class="card"><h2>Stall speeds — KIAS, 1400 kg, power off</h2>
+      <div class="scroll"><table>
+        <tr><th>Configuration</th><th>0°</th><th>30°</th><th>45°</th></tr>
+        <tr><td>Flaps up, gear up</td><td>70</td><td>75</td><td>83</td></tr>
+        <tr><td>Flaps T/O, gear up or dn</td><td>65</td><td>70</td><td>77</td></tr>
+        <tr><td>Flaps LDG, gear down</td><td>59</td><td>63</td><td>70</td></tr>
+      </table></div>
+    </div>
+    <div class="card"><h2>Factoring bases — every value this app can apply</h2>
+      <div class="scroll"><table id="regTable"></table></div>
+      <div id="regRefNote" class="note" style="margin-top:10px"></div>
+    </div>
+    <div class="card"><h2>Airspeed calibration — normal static</h2>
+      <div class="scroll"><table id="calTable"></table></div>
+    </div>
+    <div class="card"><h2>Holding</h2>
+      <div class="note">45% BHP · 1800 RPM · MP 21.5 in.Hg, subtract 0.3 per 1000 ft ·
+      consumption <b>8.5 US gal/h</b> (32 L/h).</div>
+    </div>
+    <div class="card"><h2>Antenna &amp; light penalties (cruise)</h2>
+      <div class="scroll"><table id="antTable"></table></div>
+    </div>
+    <div class="card"><h2>POH corrections (Section 5.7)</h2>
+      <div class="note">
+        <b>Runway:</b> hard sod +7% · short grass +10% · high grass +25%.<br>
+        <b>Wind:</b> −10% per 10 kt headwind · <b>+30% per 10 kt tailwind</b>.<br>
+        <b>Alternate air:</b> take-off distance +10% · climb −150 ft/min · cruise +1 in.Hg for rated power.<br>
+        <b>Max performance altitude:</b> 18 000 ft (ISA, 100 ft/min, MTOW).<br>
+        <b>Demonstrated crosswind:</b> 25 kt.
+      </div>
+    </div>
+    <div class="card"><h2>Sources</h2>
+      <div class="note">
+        <b>Aircraft data —</b> SOCATA TB20 Pilot's Information Manual, from S/N 948, P/N T00.18430320E2,
+        June 30 1988 (rev. 5–11). Section 2 pages 2.9–2.10, Section 5 pages 5.3–5.31, Section 6 pages 6.3–6.11.
+        The manual states it is non-official and must not substitute for the approved manual.<br><br>
+        <b>Part-CAT —</b> Commission Regulation (EU) 965/2012 Annex IV, CAT.POL.A.305 / .330 / .335 and
+        AMC1-CAT.POL.A.305 / AMC1-CAT.POL.A.330 (performance class B).<br><br>
+        <b>Part-NCO —</b> Annex VII, NCO.POL.100 and NCO.POL.110.<br><br>
+        <b>Advisory factors —</b> UK CAA Safety Sense leaflet 09, <em>Weight, balance and performance</em>,
+        August 2024.
+      </div>
+    </div>
+  </section>
+</main>
+<script>
+"use strict";
+const PA_TO = [0,2000,4000,6000,8000,10000];
+const PA_CL = [500,2500,4500,6500,8500,10500,12500];
+const DISA  = [-20,0,20];
+
+const TAKEOFF = {                                    // POH 5.8 / 5.9
+  2370:{ "-20":{roll:[647,757,886,1042,1230,1448],  c50:[1008,1170,1365,1605,1906,2282]},
+         "0":  {roll:[771,905,1063,1254,1487,1758], c50:[1197,1399,1642,1948,2341,2851]},
+         "20": {roll:[909,1070,1261,1492,1775,2106],c50:[1409,1655,1959,2346,2859,3564]} },
+  3086:{ "-20":{roll:[1115,1305,1527,1795,2119,2496],c50:[1735,2036,2409,2889,3537,4457]},
+         "0":  {roll:[1329,1560,1833,2162,2562,3029],c50:[2083,2469,2959,3618,4578,6190]},
+         "20": {roll:[1566,1845,2173,2572,3059,3630],c50:[2483,2976,3626,4562,6116,9854]} }
+};
+const TO_V = {2370:{lift:63,c50:69}, 3086:{lift:71,c50:78}};
+
+const LANDING = {                                    // POH 5.30 / 5.31
+  2370:{ "-20":{roll:[675,710,755,800,855,905],  c50:[1420,1495,1570,1650,1740,1905]},
+         "0":  {roll:[720,765,810,865,920,980],  c50:[1515,1590,1675,1760,1855,1975]},
+         "20": {roll:[770,820,870,930,985,1055], c50:[1610,1690,1780,1875,1980,2095]} },
+  3086:{ "-20":{roll:[770,815,865,915,980,1040], c50:[1713,1800,1895,1995,2110,2235]},
+         "0":  {roll:[825,875,930,985,1050,1115],c50:[1820,1920,2015,2120,2245,2380]},
+         "20": {roll:[885,940,995,1055,1130,1200],c50:[1945,2045,2145,2255,2390,2535]} }
+};
+const LD_V = {2370:67.5, 3086:76};
+
+const ROC = {                                        // POH 5.10 / 5.11 — ft/min
+  2370:{ "-20":[1760,1601,1443,1287,1129,973,817],
+         "0":  [1576,1425,1273,1122,970,818,667],
+         "20": [1422,1276,1130,982,836,688,540] },
+  3086:{ "-20":[1244,1112,979,848,716,585,455],
+         "0":  [1100,972,844,716,588,460,332],
+         "20": [977,853,729,604,479,353,228] }
+};
+const CLB_V = {2370:86, 3086:95};
+
+const CLIMB = {                                      // POH 5.12 / 5.13 — cumulative from SL
+  2370:{ "-20":{t:[.283,1.483,2.800,4.283,5.967,7.883,10.150], f:[.1,.6,1.0,1.5,2.0,2.5,3.1],  d:[.4,2.1,4.0,6.3,8.9,11.9,15.7]},
+         "0":  {t:[.317,1.650,3.133,4.800,6.717,8.950,11.650], f:[.1,.6,1.1,1.6,2.1,2.7,3.3],  d:[.5,2.4,4.7,7.3,10.4,14.1,18.7]},
+         "20": {t:[.350,1.817,3.467,5.333,7.517,10.100,13.300],f:[.1,.6,1.1,1.6,2.2,2.8,3.5],  d:[.5,2.8,5.3,8.4,12.0,16.4,22.1]} },
+  3086:{ "-20":{t:[.400,2.100,4.033,6.250,8.850,11.967,15.883],f:[.2,.8,1.5,2.2,3.0,3.8,4.8],  d:[.6,3.3,6.4,10.0,14.5,20.0,27.1]},
+         "0":  {t:[.450,2.383,4.583,7.150,10.217,14.033,19.083],f:[.2,.9,1.6,2.3,3.2,4.2,5.3], d:[.7,3.8,7.5,11.9,17.3,24.3,33.8]},
+         "20": {t:[.500,2.683,5.167,8.133,11.767,16.467,23.150],f:[.2,.9,1.7,2.5,3.4,4.5,6.0], d:[.8,4.5,8.8,14.0,20.7,29.6,42.7]} }
+};
+
+/* Cruise — POH 5.16–5.29 at 2943 lb. rpm entry = [rpm, MP in.Hg, US gal/h] */
+const CRUISE = {
+ bestPower:{
+  500:{75:{cas:150,tas:151,r:[[2500,23.6,16.2],[2400,24.3,15.9],[2300,25.1,15.7],[2200,26.0,15.4]]},
+       70:{cas:146,tas:147,r:[[2500,22.4,15.4],[2400,23.1,15.2],[2300,23.8,14.9],[2200,24.7,14.7]]},
+       65:{cas:142,tas:143,r:[[2500,21.2,14.7],[2400,21.9,14.4],[2300,22.6,14.2],[2200,23.4,13.9]]},
+       60:{cas:137,tas:138,r:[[2500,20.1,13.9],[2400,20.7,13.6],[2300,21.3,13.4],[2200,22.1,13.1]]},
+       55:{cas:132,tas:133,r:[[2500,18.9,13.1],[2400,19.5,12.8],[2300,20.1,12.6],[2200,20.8,12.3]]},
+       50:{cas:127,tas:128,r:[[2500,17.7,12.3],[2400,18.3,12.1],[2300,18.8,11.8],[2200,19.5,11.6]]}},
+  2500:{75:{cas:148,tas:154,r:[[2500,23.0,16.2],[2400,23.8,15.9],[2300,24.5,15.7],[2200,25.4,15.4]]},
+        70:{cas:144,tas:150,r:[[2500,21.9,15.4],[2400,22.6,15.2],[2300,23.3,14.9],[2200,24.2,14.7]]},
+        65:{cas:140,tas:145,r:[[2500,20.7,14.6],[2400,21.4,14.4],[2300,22.1,14.2],[2200,22.9,13.9]]},
+        60:{cas:136,tas:141,r:[[2500,19.6,13.9],[2400,20.2,13.6],[2300,20.9,13.4],[2200,21.6,13.1]]},
+        55:{cas:131,tas:136,r:[[2500,18.5,13.1],[2400,19.0,12.8],[2300,19.6,12.6],[2200,20.3,12.4]]},
+        50:{cas:125,tas:130,r:[[2500,17.3,12.3],[2400,17.8,12.1],[2300,18.4,11.8],[2200,19.0,11.6]]}},
+  4500:{75:{cas:147,tas:157,r:[[2500,22.5,16.2],[2400,23.2,16.0],[2300,24.0,15.7]]},
+        70:{cas:143,tas:153,r:[[2500,21.4,15.4],[2400,22.1,15.2],[2300,22.8,14.9],[2200,23.6,14.7]]},
+        65:{cas:139,tas:148,r:[[2500,20.3,14.7],[2400,20.9,14.4],[2300,21.6,14.2],[2200,22.4,13.9]]},
+        60:{cas:134,tas:143,r:[[2500,19.2,13.9],[2400,19.7,13.6],[2300,20.4,13.4],[2200,21.1,13.1]]},
+        55:{cas:129,tas:138,r:[[2500,18.0,13.1],[2400,18.6,12.9],[2300,19.2,12.6],[2200,19.8,12.4]]},
+        50:{cas:123,tas:131,r:[[2500,16.9,12.3],[2400,17.4,12.1],[2300,18.0,11.8],[2200,18.6,11.6]]}},
+  6500:{75:{cas:145,tas:160,r:[[2500,22.1,16.2]]},
+        70:{cas:141,tas:155,r:[[2500,20.9,15.4],[2400,21.6,15.2],[2300,22.3,14.9]]},
+        65:{cas:137,tas:151,r:[[2500,19.8,14.6],[2400,20.5,14.4],[2300,21.1,14.1],[2200,21.9,13.9]]},
+        60:{cas:132,tas:146,r:[[2500,18.7,13.9],[2400,19.3,13.6],[2300,19.9,13.4],[2200,20.6,13.1]]},
+        55:{cas:127,tas:140,r:[[2500,17.6,13.1],[2400,18.2,12.9],[2300,18.8,12.6],[2200,19.4,12.3]]},
+        50:{cas:120,tas:132,r:[[2500,16.5,12.3],[2400,17.0,12.1],[2300,17.6,11.8],[2200,18.2,11.6]]}},
+  8500:{70:{cas:139,tas:158,r:[[2500,20.5,15.4]]},
+        65:{cas:135,tas:154,r:[[2500,19.4,14.7],[2400,20.0,14.4],[2300,20.7,14.2]]},
+        60:{cas:130,tas:148,r:[[2500,18.3,13.9],[2400,18.9,13.6],[2300,19.5,13.4],[2200,20.2,13.1]]},
+        55:{cas:125,tas:143,r:[[2500,17.2,13.1],[2400,17.8,12.9],[2300,18.3,12.6],[2200,19.0,12.4]]}},
+  10500:{65:{cas:133,tas:156,r:[[2500,19.0,14.7]]},
+         60:{cas:129,tas:151,r:[[2500,17.9,13.9],[2400,18.5,13.6],[2300,19.1,13.4]]},
+         55:{cas:123,tas:144,r:[[2500,16.8,13.1],[2400,17.4,12.8],[2300,17.9,12.6],[2200,18.6,12.3]]}},
+  12500:{60:{cas:127,tas:154,r:[[2500,17.5,13.9],[2400,18.1,13.6]]},
+         55:{cas:120,tas:146,r:[[2500,16.5,13.1],[2400,17.0,12.9],[2300,17.5,12.6]]}}
+ },
+ bestEconomy:{
+  500:{75:{cas:147,tas:148,r:[[2500,23.6,14.0],[2400,24.3,13.7],[2300,25.1,13.5],[2200,26.0,13.2]]},
+       70:{cas:143,tas:144,r:[[2500,22.4,13.3],[2400,23.1,13.1],[2300,23.9,12.8],[2200,24.7,12.6]]},
+       65:{cas:139,tas:140,r:[[2500,21.2,12.7],[2400,21.9,12.4],[2300,22.6,12.2],[2200,23.4,11.9]]},
+       60:{cas:135,tas:136,r:[[2500,20.1,12.0],[2400,20.7,11.8],[2300,21.3,11.5],[2200,22.1,11.3]]},
+       55:{cas:129,tas:130,r:[[2500,18.9,11.4],[2400,19.5,11.1],[2300,20.1,10.8],[2200,20.8,10.6]]},
+       50:{cas:123,tas:124,r:[[2500,17.7,10.7],[2400,18.3,10.4],[2300,18.8,10.2],[2200,19.5,9.9]]}},
+  2500:{75:{cas:145,tas:151,r:[[2500,23.0,13.9],[2400,23.8,13.7],[2300,24.6,13.5],[2200,25.4,13.2]]},
+        70:{cas:142,tas:147,r:[[2500,21.9,13.3],[2400,22.6,13.1],[2300,23.3,12.8],[2200,24.2,12.6]]},
+        65:{cas:137,tas:143,r:[[2500,20.8,12.7],[2400,21.4,12.4],[2300,22.1,12.2],[2200,22.9,11.9]]},
+        60:{cas:133,tas:138,r:[[2500,19.6,12.0],[2400,20.2,11.8],[2300,20.9,11.5],[2200,21.6,11.2]]},
+        55:{cas:128,tas:133,r:[[2500,18.5,11.4],[2400,19.0,11.1],[2300,19.6,10.9],[2200,20.3,10.6]]},
+        50:{cas:121,tas:126,r:[[2500,17.3,10.7],[2400,17.8,10.4],[2300,18.4,10.2],[2200,19.0,10.0]]}},
+  4500:{75:{cas:144,tas:154,r:[[2500,22.5,13.9],[2400,23.2,13.7],[2300,24.0,13.4]]},
+        70:{cas:140,tas:150,r:[[2500,21.4,13.3],[2400,22.1,13.0],[2300,22.8,12.8],[2200,23.6,12.6]]},
+        65:{cas:136,tas:145,r:[[2500,20.3,12.7],[2400,20.9,12.4],[2300,21.6,12.2],[2200,22.4,11.9]]},
+        60:{cas:131,tas:140,r:[[2500,19.2,12.0],[2400,19.8,11.8],[2300,20.4,11.5],[2200,21.1,11.3]]},
+        55:{cas:126,tas:135,r:[[2500,18.0,11.4],[2400,18.6,11.1],[2300,19.2,10.8],[2200,19.9,10.6]]},
+        50:{cas:119,tas:127,r:[[2500,16.9,10.7],[2400,17.4,10.5],[2300,18.0,10.2],[2200,18.6,10.0]]}},
+  6500:{75:{cas:142,tas:157,r:[[2500,22.1,14.0]]},
+        70:{cas:138,tas:152,r:[[2500,21.0,13.3],[2400,21.6,13.1],[2300,22.3,12.8]]},
+        65:{cas:134,tas:148,r:[[2500,19.8,12.7],[2400,20.5,12.4],[2300,21.1,12.2],[2200,21.9,11.9]]},
+        60:{cas:129,tas:142,r:[[2500,18.7,12.0],[2400,19.3,11.8],[2300,19.9,11.5],[2200,20.6,11.2]]},
+        55:{cas:124,tas:136,r:[[2500,17.6,11.4],[2400,18.2,11.1],[2300,18.8,10.8],[2200,19.4,10.6]]},
+        50:{cas:116,tas:128,r:[[2500,16.5,10.7],[2400,17.0,10.5],[2300,17.6,10.2],[2200,18.2,10.0]]}},
+  8500:{70:{cas:136,tas:155,r:[[2500,20.5,13.3]]},
+        65:{cas:132,tas:150,r:[[2500,19.4,12.6],[2400,20.0,12.4],[2300,20.7,12.1]]},
+        60:{cas:127,tas:145,r:[[2500,18.3,12.0],[2400,18.9,11.7],[2300,19.5,11.5],[2200,20.2,11.3]]},
+        55:{cas:122,tas:138,r:[[2500,17.2,11.4],[2400,17.8,11.1],[2300,18.3,10.9],[2200,19.0,10.6]]}},
+  10500:{65:{cas:130,tas:153,r:[[2500,19.0,12.6]]},
+         60:{cas:125,tas:147,r:[[2500,17.9,12.0],[2400,18.5,11.7],[2300,19.1,11.5]]},
+         55:{cas:119,tas:140,r:[[2500,16.8,11.3],[2400,17.4,11.1],[2300,17.9,10.9],[2200,18.6,10.6]]}},
+  12500:{60:{cas:123,tas:149,r:[[2500,17.5,12.0],[2400,18.1,11.7]]},
+         55:{cas:116,tas:141,r:[[2500,16.5,11.4],[2400,17.0,11.1],[2300,17.6,10.9]]}}
+ }
+};
+
+const CAL = {                                        // POH 5.3 normal static source
+  "Flaps up, gear up":      [[65,62],[75,74],[85,85],[120,120.5],[150,151]],
+  "Flaps T/O":              [[60,56],[70,69.5],[75,75],[85,85.5],[100,101]],
+  "Flaps LDG, gear down":   [[55,52],[60,58],[65,64.5],[80,79.5],[100,99.5]]
+};
+const ANT = [["VHF",-0.48,-0.30],["VOR",-0.59,-0.37],["Glide",-0.32,-0.20],
+  ["ADF loop",-0.75,-0.47],["ELT",-0.16,-0.10],["Anticollision",-0.16,-0.10],
+  ["Strobes",-0.43,-0.27],["Typical IFR fit",-3.23,-2.00]];
+const MTOW_KG = 1400, XW_DEMO = 25;
+const W_KEYS = [2370, 3086];     // POH table keys, lb
+const W_KG   = [1075, 1400];     // the same two weights as the POH quotes them, kg
+
+function interp(x, xs, ys){
+  const n = xs.length;
+  if (x <= xs[0])   return ys[0] + (x-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0]);
+  if (x >= xs[n-1]) return ys[n-2] + (x-xs[n-2])*(ys[n-1]-ys[n-2])/(xs[n-1]-xs[n-2]);
+  for (let i=0;i<n-1;i++) if (x <= xs[i+1]){
+    const f = (x-xs[i])/(xs[i+1]-xs[i]);
+    return ys[i] + f*(ys[i+1]-ys[i]);
+  }
+  return ys[n-1];
+}
+// Interpolate over PA, then ISA-deviation, then weight. `wkg` is in kilograms.
+function lookup3(tbl, wkg, pa, di, paAxis, pick){
+  const perW = W_KEYS.map(wk => {
+    const perD = DISA.map(d => interp(pa, paAxis, pick(tbl[wk][String(d)])));
+    return interp(di, DISA, perD);
+  });
+  return interp(wkg, W_KG, perW);
+}
+const clamp = (v,a,b) => Math.min(b, Math.max(a,v));
+const isaTemp = pa => 15 - 1.98*pa/1000;
+const fmt = (v,d=0) => Number.isFinite(v) ? v.toLocaleString("en-GB",{minimumFractionDigits:d,maximumFractionDigits:d}) : "—";
+const M_PER_FT = 0.3048, FT_PER_M = 1/M_PER_FT, LB_PER_KG = 2.2046226218;
+const toM = ft => ft*M_PER_FT;
+const dist = ft => `${fmt(toM(ft))} <small>m / ${fmt(ft)} ft</small>`;
+
+/* ==================================================================
+ * Factoring bases.
+ *
+ * Part-NCO is deliberately not given a regulatory multiplier: NCO.POL.110
+ * requires only that performance be "adequate", and neither the rule nor its
+ * AMC/GM prescribes any number. The figures offered under that basis are the
+ * UK CAA Safety Sense 09 advisory factors, flagged as advisory in the ledger.
+ *
+ * Both the Part-CAT AMC and the CAA leaflet say their surface factors apply
+ * "unless otherwise specified in the AFM". The TB20 POH does specify grass
+ * factors, so POH values win wherever the POH covers the surface; the
+ * regulatory table is used only where the POH is silent.
+ * ================================================================== */
+const SURFACES = {
+  tar_dry:     { label:"Tar / paved, dry",  poh:1.00 },
+  tar_wet:     { label:"Tar / paved, wet",  cat:{to:1.00, ldg:1.15}, caa:{to:1.00, ldg:1.15} },
+  hard_sod:    { label:"Hard sod",          poh:1.07 },
+  grass_short: { label:"Short grass, dry",  poh:1.10 },
+  grass_wet:   { label:"Grass, wet",        cat:{to:1.30, ldg:1.15}, caa:{to:1.30, ldg:1.35} },
+  grass_high:  { label:"High grass",        poh:1.25 },
+  soft:        { label:"Soft ground / snow",cat:{to:1.25, ldg:1.25}, caa:{to:1.25, ldg:1.25} }
+};
+
+const BASES = {
+  none:{
+    label:"Unfactored",
+    kind:"none",
+    note:["info","Unfactored — POH figures only",
+      "Runway-surface and wind corrections from POH 5.7 are applied, but no regulatory or advisory " +
+      "safety factor. These are test-pilot figures on a new aeroplane: they carry no margin for " +
+      "technique, engine condition or wear."],
+    windCredit:false, overall:{to:1.00, ldg:1.00}, slopePer1pct:0, surfaceSet:"caa",
+    overallSrc:"none"
+  },
+  nco:{
+    label:"Part-NCO",
+    kind:"advisory",
+    note:["warn","Part-NCO prescribes no performance factors",
+      "NCO.POL.110 requires only that performance be adequate for the aerodrome and the rules of the " +
+      "air; neither the rule nor its AMC/GM sets any multiplier. The factors applied here are the " +
+      "<b>UK CAA Safety Sense 09</b> advisory values — good practice, not law. Your operating " +
+      "authority may expect something different."],
+    windCredit:false, overall:{to:1.33, ldg:1.43}, slopePer1pct:0.05, surfaceSet:"caa",
+    overallSrc:"CAA SSL09 general safety factor"
+  },
+  cat:{
+    label:"Part-CAT B",
+    kind:"regulatory",
+    note:["info","Part-CAT, performance class B",
+      "CAT.POL.A.305: unfactored take-off distance × <b>1.25</b> must not exceed TORA. " +
+      "CAT.POL.A.330: full stop from 50 ft within <b>70%</b> of LDA (× <b>1.43</b>). " +
+      "Wind credit is limited to 50% of headwind and 150% of tailwind."],
+    windCredit:true, overall:{to:1.25, ldg:1/0.70}, slopePer1pct:0.05, surfaceSet:"cat",
+    overallSrc:"CAT.POL.A.305 (vs TORA) / CAT.POL.A.330 (70% LDA)"
+  }
+};
+
+/* Weight & balance — POH Section 2.9 (limits) and Figure 6.3 (arms).
+   Datum is the front face of the firewall; arms in mm, masses in kg.
+
+   The POH states the CG limits and the baggage / cargo stations in both units,
+   and its metric figures are independently rounded rather than exact
+   conversions (35.9 in is 911.9 mm, but the manual says 0.913 m). The stated
+   metric values are used verbatim. The seat and fuel arms appear only in
+   inches in Figure 6.3, so those are converted and marked as such.
+
+   Figure 6.3's sample uses a baggage arm of 102.54 in (2604 mm) while Section
+   6.3 states 102.36 in (2.600 m). The dual-unit figure is used here; the
+   difference moves the CG by under 0.2 mm at any realistic load. */
+const MM_PER_IN = 25.4;
+const WB = {
+  arms:{
+    front:        { mm:45.38*MM_PER_IN, src:"conv" },
+    frontBackoff: { mm:47.44*MM_PER_IN, src:"conv" },
+    rear:         { mm:80.00*MM_PER_IN, src:"conv" },
+    fuel:         { mm:42.70*MM_PER_IN, src:"conv" },
+    baggage:      { mm:2600,            src:"poh"  }
+  },
+  fwdLimit:[[1000,913],[1250,949],[1400,1071]],   // kg, mm — POH 2.9 metric
+  aftLimit:1205,                                   // mm — POH 2.9 metric
+  maxKg:{ tow:1400, baggage:65, rearSeats:231 },
+  fuel:{ usableL:326, kgPerL:0.72 }
+};
+const inOf = mm => mm / MM_PER_IN;
+const fwdLimitAt = kg => interp(clamp(kg, WB.fwdLimit[0][0], WB.fwdLimit[2][0]),
+                                WB.fwdLimit.map(p=>p[0]), WB.fwdLimit.map(p=>p[1]));
+
+/* ------------------------------------------------------------------ */
+const $ = id => document.getElementById(id);
+const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : 0; };
+let basis = "none", mix = "bestPower";
+
+/* Field sets. Take-off and landing are separate aerodromes, so each carries
+   its own weather, runway and declared distances. */
+const DEP = { icao:"depIcao", elev:"elev", qnh:"qnh", oat:"oat", wt:"wt", rwy:"rwy",
+              wdir:"wdir", wspd:"wspd", wref:"wref", varn:"varn", slope:"slope",
+              surf:"surf", tora:"tora", toda:"toda", asda:"asda", lda:null };
+const ARR = { icao:"arrIcao", elev:"aElev", qnh:"aQnh", oat:"aOat", wt:"aWt", rwy:"aRwy",
+              wdir:"aWdir", wspd:"aWspd", wref:"aWref", varn:"aVarn", slope:"aSlope",
+              surf:"aSurf", tora:null, toda:null, asda:null, lda:"lda" };
+
+function conditions(S){
+  const g = k => S[k] ? num(S[k]) : 0;
+  const elev = g("elev"), qnh = g("qnh") || 1013.25, oat = g("oat");
+  const pa   = elev + (1013.25 - qnh) * 27;
+  const dev  = oat - isaTemp(pa);
+  const wRaw = g("wt");
+  /* QFU is magnetic. METAR and TAF winds are true, ATIS and tower winds are
+     magnetic, so a true wind is converted before being resolved against the
+     runway. Variation is east-positive: magnetic = true - variation. */
+  const trueWind = $(S.wref).value === "true";
+  const varn = g("varn");
+  const windMag = trueWind ? g("wdir") - varn : g("wdir");
+  const ang  = ((windMag - g("rwy")) * Math.PI) / 180;
+  const spd  = g("wspd");
+  const surfEl = $(S.surf).value;
+  return { icao: ($(S.icao).value || "").toUpperCase(), elev, qnh, oat, pa, dev,
+           da: pa + 118.8 * dev, wRaw, w: clamp(wRaw, W_KG[0], W_KG[1]),
+           hw: spd * Math.cos(ang), xw: Math.abs(spd * Math.sin(ang)),
+           windMag: ((windMag % 360) + 360) % 360, trueWind, varn,
+           slope: g("slope"), surf: SURFACES[surfEl] ? surfEl : "tar_dry",
+           tora: g("tora") * FT_PER_M, toda: g("toda") * FT_PER_M,
+           asda: g("asda") * FT_PER_M, lda: g("lda") * FT_PER_M };
+}
+
+const windFactor = hw => hw >= 0 ? 1 - 0.10 * (hw / 10) : 1 + 0.30 * (-hw / 10);
+const flag = (cls, title, body) => `<div class="flag ${cls}"><b>${title}</b>${body||""}</div>`;
+
+/* Build the ordered list of multipliers for one case, each with its source, so
+   the ledger can show exactly what was applied and where it came from. */
+function factors(kind, c, B){
+  const out = [];
+  // 1. wind — regulatory credit limit first, then the POH's own correction
+  let hw = c.hw;
+  if (B.windCredit){
+    hw = hw >= 0 ? hw * 0.5 : hw * 1.5;
+    out.push({ name:`Wind credit — ${fmt(Math.abs(c.hw),1)} kt ${c.hw>=0?"HW":"TW"} counted as ${fmt(Math.abs(hw),1)} kt`,
+               f:null, src:"CAT.POL.A.305(c)(6) / .330(a)(2)" });
+  }
+  if (Math.abs(hw) > 0.05)
+    out.push({ name:`Wind — ${fmt(Math.abs(hw),1)} kt ${hw>=0?"headwind":"tailwind"}`,
+               f:windFactor(hw), src:"POH 5.7" });
+  // 2. surface — POH wherever it covers the surface, regulation only where silent
+  const s = SURFACES[c.surf];
+  if (s.poh !== undefined){
+    if (s.poh !== 1.00) out.push({ name:`Surface — ${s.label}`, f:s.poh, src:"POH 5.7" });
+  } else {
+    const set = s[B.surfaceSet] || s.caa;
+    const f = set[kind];
+    if (f !== 1.00) out.push({ name:`Surface — ${s.label}`, f,
+      src: B.surfaceSet === "cat" ? "AMC1-CAT.POL.A.305 / .330" : "CAA SSL09" });
+  }
+  /* 3. slope — upslope penalises take-off, downslope penalises landing.
+        Take-off uses AMC1-CAT.POL.A.305 (+5% per 1% upslope). For landing,
+        CAT.POL.A.330(a)(4) requires slope to be accounted for but its AMC
+        gives no figure, so the CAA's "2% downhill = x1.1" is used in both
+        factored bases. Slope is entered as +up on departure and +down on
+        arrival, so a positive value always means the penalising direction. */
+  if (B.slopePer1pct && c.slope > 0)
+    out.push({ name:`Slope — ${fmt(c.slope,1)}% ${kind === "to" ? "up" : "down"}`,
+      f: 1 + B.slopePer1pct * c.slope,
+      src: kind === "to" ? (B.kind === "regulatory" ? "AMC1-CAT.POL.A.305" : "CAA SSL09")
+                         : (B.kind === "regulatory"
+                              ? "CAT.POL.A.330(a)(4), figure from CAA SSL09" : "CAA SSL09") });
+  return out;   // the operational factor is applied by the declared-distance test
+}
+
+/* Declared-distance tests for the active basis.
+ *
+ * CAT.POL.A.305(b) offers two routes. With no stopway or clearway declared,
+ * the single test is TOD x 1.25 against TORA. Once a stopway and/or clearway
+ * exists, the TORA test drops to x 1.00 and the TODA and ASDA tests join it.
+ * The published text separates those three with "or", but its predecessor
+ * EU-OPS 1.530 used "and", and an "or" reading would make route (2) weaker
+ * than route (1); all three are therefore required here. Each is shown
+ * separately so the individual results stay visible.
+ */
+function tests(kind, c, B){
+  if (kind === "ldg")
+    return [{ name:"LDA", f:B.overall.ldg, avail:c.lda, src:B.overallSrc }];
+  if (B.kind !== "regulatory")
+    return [{ name:"TORA", f:B.overall.to, avail:c.tora, src:B.overallSrc }];
+  if (!(c.toda > 0 || c.asda > 0))
+    return [{ name:"TORA", f:1.25, avail:c.tora, src:"CAT.POL.A.305(b)(1)" }];
+  return [
+    { name:"TORA", f:1.00, avail:c.tora, src:"CAT.POL.A.305(b)(2)(i)" },
+    { name:"TODA", f:1.15, avail:c.toda, src:"CAT.POL.A.305(b)(2)(ii)" },
+    { name:"ASDA", f:1.30, avail:c.asda, src:"CAT.POL.A.305(b)(2)(iii)" }
+  ];
+}
+
+/* The governing test drives the headline figure and the last ledger row. */
+function withPrimary(fx, t, B){
+  return t.f === 1.00 ? fx : fx.concat([{
+    name:`${B.kind === "regulatory" ? "Regulatory" : "Advisory"} factor — vs ${t.name}`,
+    f:t.f, src:t.src }]);
+}
+
+function checksTable(cond, ts){
+  const m = ft => fmt(toM(ft)) + " m";
+  let h = `<tr><th>Test</th><th>Factor</th><th>Required</th><th>Available</th><th>Margin</th></tr>`;
+  let fail = 0, given = 0;
+  for (const t of ts){
+    const req = cond * t.f;
+    const head = `<td>${t.name}<br><span class="src">${t.src}</span></td><td>x${t.f.toFixed(2)}</td><td>${m(req)}</td>`;
+    if (!t.avail){ h += `<tr>${head}<td colspan="2" style="color:var(--dim)">not entered</td></tr>`; continue; }
+    given++;
+    const sp = t.avail - req; if (sp < 0) fail++;
+    h += `<tr>${head}<td>${m(t.avail)}</td>` +
+         `<td style="color:${sp<0?"var(--bad)":"var(--good)"}">${sp<0?"\u2212":"+"}${m(Math.abs(sp))}</td></tr>`;
+  }
+  return { html:h, fail, given };
+}
+const product = fx => fx.reduce((a,x) => a * (x.f ?? 1), 1);
+
+function ledger(base, fx, total){
+  const m = ft => fmt(toM(ft)) + " m";
+  let h = `<div><span class="f">POH unfactored, tar dry, no wind</span><span class="n">${m(base)}</span></div>`;
+  let run = base;
+  for (const x of fx){
+    if (x.f != null) run *= x.f;
+    h += `<div><span class="f">${x.name}<br><span class="src">${x.src}</span></span>` +
+         `<span class="n">${x.f != null ? "×" + x.f.toFixed(3) + " → " + m(run) : "—"}</span></div>`;
+  }
+  h += `<div><span>Total ×${product(fx).toFixed(3)}</span><span>${m(total)}</span></div>`;
+  return h;
+}
+
+/* ------------------------------------------------------------------ */
+function renderConditions(c, ids, flagsId, isArr){
+  $(ids.pa).textContent  = fmt(c.pa) + " ft";
+  $(ids.isa).textContent = (c.dev >= 0 ? "+" : "") + fmt(c.dev,1) + " °C";
+  $(ids.da).textContent  = fmt(c.da) + " ft";
+  $(ids.hw).textContent  = c.hw >= 0 ? fmt(c.hw,1)+" kt HW" : fmt(-c.hw,1)+" kt TW";
+  $(ids.xw).textContent  = fmt(c.xw,1) + " kt";
+  $(ids.wt).textContent  = fmt(c.wRaw)+" kg / "+fmt(c.wRaw*LB_PER_KG)+" lb";
+  let f = "";
+  if (c.wRaw > MTOW_KG) f += flag("bad", isArr ? "Over max landing mass" : "Over max take-off mass",
+      `${fmt(c.wRaw)} kg exceeds ${fmt(MTOW_KG)} kg. Figures below are not valid.`);
+  else if (c.wRaw < W_KG[0] && c.wRaw > 0) f += flag("warn","Below the lightest tabulated mass",
+      `Computed at ${fmt(W_KG[0])} kg — conservative (real distances will be shorter).`);
+  if (c.trueWind && c.varn)
+    f += flag("info","Wind converted to magnetic",
+      `True ${fmt(((c.windMag + c.varn) % 360 + 360) % 360)}° with ${fmt(Math.abs(c.varn),1)}°` +
+      `${c.varn >= 0 ? "E" : "W"} variation is magnetic ${fmt(c.windMag)}°, resolved against the QFU.`);
+  else if (c.trueWind && !c.varn && $(isArr ? "aWspd" : "wspd").value > 0)
+    f += flag("warn","Variation is zero",
+      `The wind is set to true but no magnetic variation is entered, so it is being resolved ` +
+      `directly against a magnetic QFU. Enter the local variation.`);
+  if (c.xw > XW_DEMO) f += flag("bad","Crosswind above demonstrated",
+      `${fmt(c.xw,1)} kt vs 25 kt demonstrated.`);
+  else if (c.xw > XW_DEMO*0.8) f += flag("warn","Crosswind approaching demonstrated limit",
+      `${fmt(c.xw,1)} kt of 25 kt.`);
+  if (c.hw < 0) f += flag("warn","Tailwind component",
+      `${fmt(-c.hw,1)} kt — the POH adds 30% per 10 kt.`);
+  $(flagsId).innerHTML = f;
+}
+const DEP_IDS = { pa:"dPA", isa:"dISA", da:"dDA", hw:"dHW", xw:"dXW", wt:"dWT" };
+const ARR_IDS = { pa:"aDPA", isa:"aDISA", da:"aDDA", hw:"aDHW", xw:"aDXW", wt:"aDWT" };
+
+function rangeFlags(c, paAxis){
+  let f = "";
+  const hi = paAxis[paAxis.length-1];
+  if (c.pa > hi) f += flag("bad","Pressure altitude beyond the table",
+      `${fmt(c.pa)} ft is above the tabulated ${fmt(hi)} ft — extrapolated, treat as unreliable.`);
+  if (Math.abs(c.dev) > 20) f += flag("warn","Temperature beyond the table",
+      `ISA${c.dev>0?"+":""}${fmt(c.dev,0)} °C is outside ISA±20 — linearly extrapolated.`);
+  return f;
+}
+
+function renderTakeoff(c){
+  const B = BASES[basis], cf = factors("to", c, B);
+  const ts = tests("to", c, B), fx = withPrimary(cf, ts[0], B), k = product(fx);
+  const base50 = lookup3(TAKEOFF, c.w, c.pa, c.dev, PA_TO, o=>o.c50);
+  const roll   = lookup3(TAKEOFF, c.w, c.pa, c.dev, PA_TO, o=>o.roll);
+  const cond   = base50 * product(cf);           // conditions applied, before the operational factor
+  $("to50").innerHTML  = dist(base50*k);
+  $("toRoll").innerHTML= dist(roll*product(cf)*ts[0].f);
+  $("toRaw").innerHTML = dist(base50);
+  $("toVlo").innerHTML = fmt(interp(c.w, W_KG, [TO_V[2370].lift, TO_V[3086].lift])) + ` <small>KIAS</small>`;
+  $("toV50").innerHTML = fmt(interp(c.w, W_KG, [TO_V[2370].c50,  TO_V[3086].c50]))  + ` <small>KIAS</small>`;
+  $("toFx").innerHTML  = ledger(base50, fx, base50*k);
+  const ch = checksTable(cond, ts);
+  $("toChecks").innerHTML = ch.html;
+  $("toChkNote").innerHTML = ts.length > 1
+    ? "A stopway and/or clearway is declared, so CAT.POL.A.305(b)(2) applies: the TORA test drops to " +
+      "&times;1.00 and the TODA and ASDA tests join it. All three are required here \u2014 see the note in " +
+      "Reference on the &ldquo;or&rdquo; in the published text."
+    : (BASES[basis].kind === "regulatory"
+        ? "No stopway or clearway declared, so CAT.POL.A.305(b)(1) applies: &times;1.25 against TORA. " +
+          "Enter a TODA or ASDA to switch to route (2)."
+        : "");
+  $("toFlags").innerHTML = rangeFlags(c, PA_TO) +
+    (ch.given ? (ch.fail ? flag("bad", ch.fail>1?`${ch.fail} declared-distance tests fail`:"Declared distance too short",
+                               "See the runway requirement table below.")
+                         : flag("ok","All declared-distance tests pass","")) : "");
+}
+
+function renderLanding(c){
+  const B = BASES[basis], cf = factors("ldg", c, B);
+  const ts = tests("ldg", c, B), fx = withPrimary(cf, ts[0], B), k = product(fx);
+  const base50 = lookup3(LANDING, c.w, c.pa, c.dev, PA_TO, o=>o.c50);
+  const roll   = lookup3(LANDING, c.w, c.pa, c.dev, PA_TO, o=>o.roll);
+  $("ld50").innerHTML  = dist(base50*k);
+  $("ldRoll").innerHTML= dist(roll*product(cf)*ts[0].f);
+  $("ldRaw").innerHTML = dist(base50);
+  $("ldV").innerHTML   = fmt(interp(c.w, W_KG, [LD_V[2370], LD_V[3086]]),1) + ` <small>KIAS</small>`;
+  $("ldFx").innerHTML  = ledger(base50, fx, base50*k);
+  const ch = checksTable(base50*product(cf), ts);
+  $("ldChecks").innerHTML = ch.html;
+  $("ldFlags").innerHTML = rangeFlags(c, PA_TO) +
+    (ch.given ? (ch.fail ? flag("bad","LDA too short","See the runway requirement table below.")
+                         : flag("ok","Landing distance available is adequate","")) : "");
+}
+
+function renderClimb(c){
+  const roc = lookup3(ROC, c.w, c.pa, c.dev, PA_CL, o=>o);
+  const v   = interp(c.w, W_KG, [CLB_V[2370], CLB_V[3086]]);
+  $("roc").innerHTML  = fmt(roc) + ` <small>ft/min</small>`;
+  $("clbV").innerHTML = fmt(v) + ` <small>KIAS</small>`;
+  $("clbG").innerHTML = fmt(roc / (v*(1+0.02*c.pa/1000) * 101.27) * 6076) + ` <small>ft/NM</small>`;
+  let f = rangeFlags(c, PA_CL);
+  if (roc < 200) f += flag("bad","Very low rate of climb", `${fmt(roc)} ft/min at these conditions.`);
+  else if (roc < 500) f += flag("warn","Low rate of climb", `${fmt(roc)} ft/min.`);
+  $("clbFlags").innerHTML = f;
+
+  const a = num("cFrom"), b = num("cTo");
+  const at = k => Math.max(0, lookup3(CLIMB, c.w, k, c.dev, PA_CL, o=>o.t));
+  const af = k => Math.max(0, lookup3(CLIMB, c.w, k, c.dev, PA_CL, o=>o.f));
+  const ad = k => Math.max(0, lookup3(CLIMB, c.w, k, c.dev, PA_CL, o=>o.d));
+  const dt = Math.max(0, at(b)-at(a)), df = Math.max(0, af(b)-af(a)), dd = Math.max(0, ad(b)-ad(a));
+  $("cT").innerHTML = `${Math.floor(dt)}<small>:</small>${String(Math.round((dt%1)*60)).padStart(2,"0")} <small>min</small>`;
+  $("cF").innerHTML = fmt(df,1) + ` <small>US gal / ${fmt(df*3.785,0)} L</small>`;
+  $("cD").innerHTML = fmt(dd,1) + ` <small>NM still air</small>`;
+  $("cFlags").innerHTML = b <= a ? flag("warn","Check the altitudes","Target is not above the start altitude.")
+    : (b > 12500 ? flag("warn","Above the table","Climb table stops at 12 500 ft — extrapolated.") : "");
+}
+
+function cruiseAt(mixKey, pa){
+  const alts = Object.keys(CRUISE[mixKey]).map(Number).sort((a,b)=>a-b);
+  const lo = alts.filter(a=>a<=pa).pop() ?? alts[0];
+  const hi = alts.find(a=>a>=pa) ?? alts[alts.length-1];
+  const f  = hi===lo ? 0 : (clamp(pa,alts[0],alts[alts.length-1])-lo)/(hi-lo);
+  const A = CRUISE[mixKey][lo], B2 = CRUISE[mixKey][hi], out = [];
+  for (const bhp of [75,70,65,60,55,50]){
+    if (!A[bhp] || !B2[bhp]) continue;
+    const rows = [];
+    for (const [rpm, mpA, ffA] of A[bhp].r){
+      const m = B2[bhp].r.find(x=>x[0]===rpm);
+      if (!m) continue;
+      rows.push({ rpm, mp: mpA + f*(m[1]-mpA), ff: ffA + f*(m[2]-ffA) });
+    }
+    if (rows.length) out.push({ bhp, tas: A[bhp].tas + f*(B2[bhp].tas-A[bhp].tas), rows });
+  }
+  return { rows: out, clamped: pa < alts[0] || pa > alts[alts.length-1] };
+}
+
+function renderCruise(){
+  const pa = num("crzAlt"), fuelL = num("crzFuel"), d = num("crzDist"), res = num("crzRes");
+  const fuel = fuelL / 3.785;                       // litres in, US gal for the tables
+  const { rows, clamped } = cruiseAt(mix, pa);
+  let h = `<tr><th>%BHP</th><th>RPM</th><th>MP</th><th>TAS</th><th>L/h</th><th>gal/h</th>
+           <th>Endur</th><th>Range</th>${d?"<th>Leg</th><th>Fuel L</th>":""}</tr>`;
+  for (const b of rows) b.rows.forEach((r,i) => {
+    const usable = Math.max(0, fuel - res/60*r.ff), endur = usable/r.ff, range = endur*b.tas;
+    const legT = d ? d/b.tas : 0;
+    h += `<tr${i===0?' class="rec"':''}><td>${i===0?b.bhp+"%":""}</td><td>${r.rpm}</td>
+      <td>${r.mp.toFixed(1)}</td><td>${Math.round(b.tas)}</td><td>${(r.ff*3.785).toFixed(1)}</td>
+      <td>${r.ff.toFixed(1)}</td>
+      <td>${Math.floor(endur)}:${String(Math.round((endur%1)*60)).padStart(2,"0")}</td>
+      <td>${Math.round(range)}</td>
+      ${d?`<td>${Math.floor(legT)}:${String(Math.round((legT%1)*60)).padStart(2,"0")}</td>
+           <td>${(legT*r.ff*3.785).toFixed(1)}</td>`:""}</tr>`;
+  });
+  $("crzTable").innerHTML = h;
+  $("crzFlags").innerHTML = (clamped ? flag("warn","Outside the cruise table",
+      "Cruise data covers 500–12 500 ft; the nearest tabulated altitude was used.") : "")
+    + (rows.length ? "" : flag("bad","No data at this altitude",""));
+}
+
+/* ---------------------------- W & B ---------------------------- */
+function renderWB(){
+  const frontArm = ($("wbBackoff").checked ? WB.arms.frontBackoff : WB.arms.front).mm;
+  const fuelKg = l => l * WB.fuel.kgPerL;
+  const items = [
+    { n:"Empty aircraft", kg:num("wbEW"), arm:num("wbEA") },
+    { n:"Pilot",          kg:num("wbP"),  arm:frontArm },
+    { n:"Front passenger",kg:num("wbFP"), arm:frontArm },
+    { n:"Rear passengers",kg:num("wbR"),  arm:WB.arms.rear.mm },
+    { n:"Baggage",        kg:num("wbB"),  arm:WB.arms.baggage.mm },
+    { n:`Fuel — ${fmt(num("wbF"))} L`, kg:fuelKg(num("wbF")), arm:WB.arms.fuel.mm }
+  ];
+  const sum = a => a.reduce((s,x)=>s+x, 0);
+  const tow  = sum(items.map(i=>i.kg));
+  const mom  = sum(items.map(i=>i.kg*i.arm));
+  const cg   = tow ? mom/tow : 0;
+  const tripKg = fuelKg(Math.min(num("wbTF"), num("wbF")));
+  const ldw  = tow - tripKg, ldMom = mom - tripKg*WB.arms.fuel.mm, ldCg = ldw ? ldMom/ldw : 0;
+
+  $("wbTOW").innerHTML = fmt(tow,1) + ` <small>kg / ${fmt(tow*LB_PER_KG)} lb</small>`;
+  $("wbCG").innerHTML  = fmt(cg,0) + ` <small>mm / ${fmt(inOf(cg),2)} in</small>`;
+  const fwd = fwdLimitAt(tow);
+  $("wbLim").innerHTML = fmt(fwd,0) + `<small> – </small>` + fmt(WB.aftLimit,0) + ` <small>mm</small>`;
+
+  let h = `<tr><th>Item</th><th>Mass kg</th><th>Arm mm</th><th>Moment kg·mm</th></tr>`;
+  for (const i of items) if (i.kg)
+    h += `<tr><td>${i.n}</td><td>${fmt(i.kg,1)}</td><td>${fmt(i.arm,0)}</td><td>${fmt(i.kg*i.arm)}</td></tr>`;
+  h += `<tr class="rec"><td><b>Take-off</b></td><td><b>${fmt(tow,1)}</b></td><td><b>${fmt(cg,0)}</b></td><td><b>${fmt(mom)}</b></td></tr>`;
+  if (tripKg) h += `<tr><td>After ${fmt(num("wbTF"))} L trip fuel</td><td>${fmt(ldw,1)}</td><td>${fmt(ldCg,0)}</td><td>${fmt(ldMom)}</td></tr>`;
+  $("wbTable").innerHTML = h;
+
+  let f = "";
+  if (tow > WB.maxKg.tow) f += flag("bad","Over max take-off mass",
+      `${fmt(tow,1)} kg exceeds ${WB.maxKg.tow} kg by ${fmt(tow-WB.maxKg.tow,1)} kg.`);
+  if (num("wbB") > WB.maxKg.baggage) f += flag("bad","Baggage over limit",
+      `${fmt(num("wbB"),1)} kg exceeds the ${WB.maxKg.baggage} kg baggage-compartment limit.`);
+  if (num("wbR") > WB.maxKg.rearSeats) f += flag("bad","Rear seats over limit",
+      `${fmt(num("wbR"),1)} kg exceeds the ${WB.maxKg.rearSeats} kg maximum on the rear seats.`);
+  if (num("wbF") > WB.fuel.usableL) f += flag("warn","More than usable fuel",
+      `${fmt(num("wbF"))} L exceeds the ${WB.fuel.usableL} L usable.`);
+  const chk = (w, g, when) => {
+    if (!w) return "";
+    const lo = fwdLimitAt(w);
+    if (g < lo) return flag("bad",`CG forward of limit ${when}`,
+      `${fmt(g,0)} mm vs ${fmt(lo,0)} mm forward limit at ${fmt(w,1)} kg.`);
+    if (g > WB.aftLimit) return flag("bad",`CG aft of limit ${when}`,
+      `${fmt(g,0)} mm vs ${fmt(WB.aftLimit,0)} mm aft limit.`);
+    return flag("ok",`Within envelope ${when}`,
+      `CG ${fmt(g,0)} mm, limits ${fmt(lo,0)}–${fmt(WB.aftLimit,0)} mm at ${fmt(w,1)} kg.`);
+  };
+  f += chk(tow, cg, "at take-off");
+  if (tripKg) f += chk(ldw, ldCg, "after trip fuel");
+  $("wbFlags").innerHTML = f;
+
+  drawEnvelope(tow, cg, tripKg ? ldw : null, ldCg);
+
+  $("wbRef").innerHTML = `<tr><th>Station</th><th>Arm mm</th><th>Arm in</th><th>Source</th><th>Limit</th></tr>` +
+    [["Front seats (standard)", WB.arms.front, "—"],
+     ["Front seats (2-in back-off)", WB.arms.frontBackoff, "—"],
+     ["Rear seats", WB.arms.rear, "231 kg"],
+     ["Fuel", WB.arms.fuel, "326 L usable"],
+     ["Baggage", WB.arms.baggage, "65 kg"]]
+    .map(([n,a,lim]) => `<tr><td>${n}</td><td>${fmt(a.mm,0)}</td><td>${fmt(inOf(a.mm),2)}</td>` +
+      `<td><span class="src">${a.src === "poh" ? "POH metric" : "converted from in"}</span></td><td>${lim}</td></tr>`).join("") +
+    `<tr><td>Max take-off mass</td><td colspan="3">—</td><td>1400 kg</td></tr>` +
+    `<tr><td>CG forward limit</td><td colspan="4">913 mm @1000 kg · 949 mm @1250 kg · 1071 mm @1400 kg — POH metric</td></tr>` +
+    `<tr><td>CG aft limit</td><td colspan="4">1205 mm, all masses — POH metric</td></tr>`;
+}
+
+function drawEnvelope(tow, cg, ldw, ldCg){
+  const W=560, H=380, L=52, R=14, T=14, Bm=40;
+  const x0=880, x1=1250, y0=850, y1=1450;
+  const X = v => L + (v-x0)/(x1-x0)*(W-L-R);
+  const Y = v => T + (1-(v-y0)/(y1-y0))*(H-T-Bm);
+  const env = [[1000,913],[1250,949],[1400,1071],[1400,1205],[1000,1205]];
+  // envelope below 1000 kg keeps the 35.9 in forward limit
+  const poly = [[y0,913],...env,[y0,1205]].map(([w,a])=>`${X(a)},${Y(w)}`).join(" ");
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight and balance envelope">`;
+  g += `<polygon points="${poly}" fill="rgba(88,166,255,.13)" stroke="#58a6ff" stroke-width="2"/>`;
+  for (let a=900; a<=1250; a+=50) g +=
+    `<line x1="${X(a)}" y1="${Y(y0)}" x2="${X(a)}" y2="${Y(y1)}" stroke="#2d3540" stroke-width="1"/>
+     <text x="${X(a)}" y="${H-Bm+18}" fill="#8b949e" font-size="11" text-anchor="middle">${a}</text>`;
+  for (let w=900; w<=1400; w+=100) g +=
+    `<line x1="${X(x0)}" y1="${Y(w)}" x2="${X(x1)}" y2="${Y(w)}" stroke="#2d3540" stroke-width="1"/>
+     <text x="${L-8}" y="${Y(w)+4}" fill="#8b949e" font-size="11" text-anchor="end">${w}</text>`;
+  g += `<text x="${(L+W-R)/2}" y="${H-6}" fill="#8b949e" font-size="11" text-anchor="middle">CG — mm aft of firewall</text>`;
+  g += `<text x="14" y="${T+10}" fill="#8b949e" font-size="11">kg</text>`;
+  if (ldw != null && tow) g += `<line x1="${X(cg)}" y1="${Y(tow)}" x2="${X(ldCg)}" y2="${Y(ldw)}"
+      stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  if (ldw != null) g += `<circle cx="${X(ldCg)}" cy="${Y(ldw)}" r="6" fill="none" stroke="#e6edf3" stroke-width="2"/>`;
+  if (tow){
+    const ok = cg >= fwdLimitAt(tow) && cg <= WB.aftLimit && tow <= WB.maxKg.tow;
+    g += `<circle cx="${X(cg)}" cy="${Y(tow)}" r="7" fill="${ok?"#3fb950":"#f85149"}" stroke="#0d1117" stroke-width="2"/>`;
+  }
+  $("wbChart").innerHTML = g + `</svg>`;
+}
+
+/* ---------------------------- shell ---------------------------- */
+function renderRef(){
+  let h = `<tr><th>Config</th><th>KIAS</th><th>KCAS</th></tr>`;
+  for (const [k,rows] of Object.entries(CAL))
+    rows.forEach((r,i)=> h += `<tr><td>${i===0?k:""}</td><td>${r[0]}</td><td>${r[1]}</td></tr>`);
+  $("calTable").innerHTML = h;
+  $("antTable").innerHTML = `<tr><th>Item</th><th>KIAS</th><th>Range</th></tr>` +
+    ANT.map(a=>`<tr><td>${a[0]}</td><td>${a[1].toFixed(2)}</td><td>${a[2].toFixed(2)}%</td></tr>`).join("");
+  $("regTable").innerHTML =
+    `<tr><th>Factor</th><th>Unfactored</th><th>Part-NCO</th><th>Part-CAT B</th></tr>` +
+    `<tr><td>Overall — take-off, no stopway/clearway</td><td>1.00</td><td>1.33</td><td>1.25 vs TORA</td></tr>` +
+    `<tr><td>Overall — take-off, stopway/clearway declared</td><td>1.00</td><td>1.33</td><td>1.00 vs TORA · 1.15 vs TODA · 1.30 vs ASDA</td></tr>` +
+    `<tr><td>Overall — landing</td><td>1.00</td><td>1.43</td><td>1.43 (70% LDA)</td></tr>` +
+    `<tr><td>Headwind credit</td><td>100%</td><td>100%</td><td>50%</td></tr>` +
+    `<tr><td>Tailwind penalty</td><td>100%</td><td>100%</td><td>150%</td></tr>` +
+    `<tr><td>Upslope per 1% — take-off</td><td>—</td><td>+5%</td><td>+5%</td></tr>` +
+    `<tr><td>Downslope per 1% — landing</td><td>—</td><td>+5%</td><td>+5%</td></tr>` +
+    `<tr><td>Hard sod</td><td colspan="3">1.07 — POH 5.7, used in every basis</td></tr>` +
+    `<tr><td>Short grass, dry</td><td colspan="3">1.10 — POH 5.7, used in every basis</td></tr>` +
+    `<tr><td>High grass</td><td colspan="3">1.25 — POH 5.7, used in every basis</td></tr>` +
+    `<tr><td>Wet grass — T/O</td><td>1.30</td><td>1.30</td><td>1.30</td></tr>` +
+    `<tr><td>Wet grass — landing</td><td>1.35</td><td>1.35</td><td>1.15</td></tr>` +
+    `<tr><td>Wet paved — landing</td><td>1.15</td><td>1.15</td><td>1.15</td></tr>` +
+    `<tr><td>Soft ground / snow</td><td>1.25</td><td>1.25</td><td>1.25</td></tr>`;
+  $("regRefNote").innerHTML =
+    `Where the POH itself specifies a surface factor, that value is used in <em>every</em> basis — both ` +
+    `AMC1-CAT.POL.A.305 and CAA SSL09 defer to the AFM ("unless otherwise specified in the AFM"). ` +
+    `The regulatory tables are used only for surfaces the POH does not cover. ` +
+    `<b>Part-NCO mandates no factors at all</b> — the NCO column is UK CAA advisory guidance.<br><br>` +
+    `<b>On CAT.POL.A.305(b)(2):</b> the published text separates the TORA, TODA and ASDA tests with ` +
+    `&ldquo;or&rdquo;, but its predecessor EU-OPS 1.530 used &ldquo;and&rdquo;, and reading it as a true ` +
+    `&ldquo;or&rdquo; would make route (2) less demanding than route (1) — which cannot be the intent. ` +
+    `This app therefore requires all three, and shows each test separately so you can judge for yourself.`;
+}
+
+function renderAll(){
+  const dep = conditions(DEP), arr = conditions(ARR);
+  const B = BASES[basis];
+  $("regNote").innerHTML = flag(B.note[0], B.note[1], B.note[2]);
+  renderConditions(dep, DEP_IDS, "condFlags", false);
+  renderConditions(arr, ARR_IDS, "aCondFlags", true);
+  renderTakeoff(dep); renderLanding(arr); renderClimb(dep); renderCruise(); renderWB();
+  // aerodrome identifiers on the result headings
+  $("toHead").textContent = dep.icao ? `Take-off distance — ${dep.icao}` : "Take-off distance";
+  $("ldHead").textContent = arr.icao ? `Landing distance — ${arr.icao}` : "Landing distance";
+}
+
+const FIELDS = ["depIcao","elev","qnh","oat","wt","rwy","wdir","wspd","wref","varn","slope","surf","tora","toda","asda",
+                "arrIcao","aElev","aQnh","aOat","aWt","aRwy","aWdir","aWspd","aWref","aVarn","aSlope","aSurf","lda",
+                "cFrom","cTo","crzAlt","crzFuel","crzDist","crzRes",
+                "wbEW","wbEA","wbP","wbFP","wbR","wbB","wbF","wbTF"];
+try {
+  const s = JSON.parse(localStorage.getItem("tb20.v3") || "{}");
+  for (const k of FIELDS){
+    const el = $(k); if (!el || s[k] === undefined) continue;
+    // a value saved by an older build may no longer be a valid option
+    if (el.tagName === "SELECT" && ![...el.options].some(o => o.value === s[k])) continue;
+    el.value = s[k];
+  }
+  if (s._mix) mix = s._mix;
+  if (s._basis) basis = s._basis;
+  if (s._backoff) $("wbBackoff").checked = s._backoff;
+} catch(e){ /* first run, or storage unavailable */ }
+
+function save(){
+  try {
+    const o = { _mix:mix, _basis:basis, _backoff:$("wbBackoff").checked };
+    for (const k of FIELDS) if ($(k)) o[k] = $(k).value;
+    localStorage.setItem("tb20.v3", JSON.stringify(o));
+  } catch(e){ /* private mode — not worth interrupting the pilot over */ }
+}
+for (const k of FIELDS) if ($(k)) $(k).addEventListener("input", () => { renderAll(); save(); });
+$("wbBackoff").addEventListener("change", () => { renderAll(); save(); });
+
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  for (const x of $("tabs").children) x.setAttribute("aria-selected", x === b);
+  for (const s of document.querySelectorAll("main > section")) s.hidden = s.id !== b.dataset.t;
+  const tab = b.dataset.t, perf = tab === "to" || tab === "ldg";
+  $("condDep").hidden = !(tab === "to" || tab === "clb");
+  $("condArr").hidden = tab !== "ldg";
+  $("regCard").hidden = !perf;          // factoring only applies to take-off and landing
+});
+$("regCard").hidden = false;
+
+// Same-day, same-region flights usually share weather; the runway, mass and
+// declared distances stay per-aerodrome and are deliberately not copied.
+$("copyDep").addEventListener("click", () => {
+  for (const [from, to] of [["qnh","aQnh"],["oat","aOat"],["wdir","aWdir"],
+                            ["wspd","aWspd"],["wref","aWref"],["varn","aVarn"]])
+    $(to).value = $(from).value;
+  renderAll(); save();
+});
+
+// TODA and ASDA only mean something under CAT.POL.A.305(b)(2); the other
+// bases test against TORA and LDA alone, so the fields are hidden there.
+function syncDeclaredFields(){
+  const cat = BASES[basis].kind === "regulatory";
+  $("fToda").hidden = !cat;
+  $("fAsda").hidden = !cat;
+}
+$("regSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  basis = b.dataset.r;
+  for (const x of $("regSeg").children) x.setAttribute("aria-pressed", x === b);
+  syncDeclaredFields(); renderAll(); save();
+});
+$("mixSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  mix = b.dataset.m;
+  for (const x of $("mixSeg").children) x.setAttribute("aria-pressed", x === b);
+  renderCruise(); save();
+});
+for (const x of $("regSeg").children) x.setAttribute("aria-pressed", x.dataset.r === basis);
+for (const x of $("mixSeg").children) x.setAttribute("aria-pressed", x.dataset.m === mix);
+
+syncDeclaredFields();
+renderRef();
+renderAll();
+</script>
