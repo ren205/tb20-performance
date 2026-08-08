@@ -72,6 +72,30 @@ tests with "or", but its predecessor EU-OPS 1.530 used "and", and an "or"
 reading would make route (2) less demanding than route (1). The app requires all
 three and shows each separately.
 
+## Weather entry
+
+Each panel has a **METAR paste box**. Paste the raw report (from AeroWeather or
+any other source) and it fills OAT, QNH and wind, and sets the wind reference to
+True — because METAR winds are degrees true while the QFU is magnetic.
+
+Parsing is token-by-token rather than one regex over the whole string, so
+visibility (`1/2SM`), RVR (`R23L/0600`) and runway-state groups cannot be
+mistaken for the temperature group. Handles `Q` and `A` pressure, KT/MPS/KMH,
+negative temperatures, gusts, `VRB` and variable-direction ranges.
+
+It warns rather than guessing:
+
+- the report is for a **different aerodrome** than the panel's ICAO;
+- the observation is **more than an hour old** (age is computed allowing for
+  month rollover, since a METAR carries a day but no month);
+- the wind is **VRB**, so no direction can be resolved — it fills the speed only;
+- the wind is **gusting** — only the steady wind is filled, and you decide
+  whether to use the gust for the crosswind and tailwind checks;
+- the report is **incomplete**, e.g. no pressure or no temperature group.
+
+Nothing is inferred that the report does not contain. On reload a stored report
+shows its age but does **not** re-apply, so hand-edited values survive.
+
 ## Units and conventions
 
 - Altitudes and elevations in **feet**; runway distances in **metres**;

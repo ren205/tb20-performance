@@ -46,6 +46,12 @@
       <div id="fToda"><label>TODA (m)</label><input id="toda" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
       <div id="fAsda"><label>ASDA (m)</label><input id="asda" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
     </div>
+    <div class="metar">
+      <label>Paste METAR — fills OAT, QNH and wind</label>
+      <textarea id="depMetar" rows="2" spellcheck="false" autocapitalize="characters"
+        placeholder="METAR LFSN 081330Z AUTO 12004KT CAVOK 32/10 Q1017"></textarea>
+      <div id="depMetarOut"></div>
+    </div>
     <div class="derived">
       <div>PA <b id="dPA">—</b></div>
       <div>ISA dev <b id="dISA">—</b></div>
@@ -85,6 +91,12 @@
         <option value="soft">Soft ground / snow</option>
       </select></div>
       <div><label>LDA (m)</label><input id="lda" type="number" inputmode="numeric" value="0" placeholder="0 = skip"></div>
+    </div>
+    <div class="metar">
+      <label>Paste METAR — fills OAT, QNH and wind</label>
+      <textarea id="arrMetar" rows="2" spellcheck="false" autocapitalize="characters"
+        placeholder="METAR LFST 081330Z AUTO 03008KT CAVOK 31/11 Q1017"></textarea>
+      <div id="arrMetarOut"></div>
     </div>
     <div class="derived">
       <div>PA <b id="aDPA">—</b></div>

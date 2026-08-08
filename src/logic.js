@@ -476,6 +476,135 @@ function drawEnvelope(tow, cg, ldw, ldCg){
   $("wbChart").innerHTML = g + `</svg>`;
 }
 
+
+/* ------------------------------------------------------------------ *
+ * Raw METAR parsing.
+ *
+ * METAR is a rigid whitespace-delimited token format, so it is parsed
+ * token by token rather than with one regex over the whole string — that
+ * stops visibility groups ("1/2SM"), RVR ("R23L/0600") and runway state
+ * groups being mistaken for the temperature group.
+ *
+ * Winds in a METAR are degrees TRUE, so applying one also switches that
+ * aerodrome's wind-reference selector to True. Nothing is inferred that
+ * the report does not actually contain.
+ * ------------------------------------------------------------------ */
+const METAR_WORDS = ["METAR","SPECI","AUTO","NOSIG","CAVOK","TEMPO","BECMG",
+                     "RMK","COR","NIL","SNOCLO"];
+
+function parseMetar(raw){
+  const s = (raw || "").toUpperCase().replace(/=+\s*$/, "").trim();
+  if (!s) return null;
+  const tok = s.split(/\s+/), r = {};
+  for (let i = 0; i < tok.length; i++){
+    const t = tok[i]; let m;
+    if (!r.station && /^[A-Z]{4}$/.test(t) && !METAR_WORDS.includes(t) &&
+        /^\d{6}Z$/.test(tok[i+1] || "")) { r.station = t; continue; }
+    if ((m = t.match(/^(\d{2})(\d{2})(\d{2})Z$/))){
+      r.day = +m[1]; r.hh = +m[2]; r.mi = +m[3]; continue;
+    }
+    if ((m = t.match(/^(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?(KT|MPS|KMH)$/))){
+      const kt = v => m[4] === "MPS" ? v * 1.94384 : m[4] === "KMH" ? v * 0.539957 : v;
+      r.vrb = m[1] === "VRB";
+      if (!r.vrb) r.wdir = +m[1];
+      r.wspd = Math.round(kt(+m[2]));
+      if (m[3]) r.gust = Math.round(kt(+m[3]));
+      r.windUnit = m[4];
+      continue;
+    }
+    if ((m = t.match(/^(\d{3})V(\d{3})$/))){ r.varFrom = +m[1]; r.varTo = +m[2]; continue; }
+    if ((m = t.match(/^(M?\d{2})\/(M?\d{2}|\/\/)$/))){
+      r.temp = parseInt(m[1].replace("M","-"), 10); continue;
+    }
+    if ((m = t.match(/^Q(\d{3,4})$/))){ r.qnh = +m[1]; continue; }
+    if ((m = t.match(/^A(\d{4})$/))){
+      r.inHg = +m[1] / 100; r.qnh = Math.round(r.inHg * 33.8639); continue;
+    }
+  }
+  if (r.temp === undefined && r.qnh === undefined && r.wspd === undefined) return null;
+  return r;
+}
+
+/* Age in minutes. A METAR carries day-of-month and time but no month, so a
+   timestamp that lands in the future is read as last month's. */
+function metarAgeMin(r){
+  if (r.day === undefined) return null;
+  const now = new Date();
+  let d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), r.day, r.hh, r.mi));
+  if (d - now > 6 * 3600e3)
+    d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, r.day, r.hh, r.mi));
+  return Math.round((now - d) / 60000);
+}
+const hhmm = m => `${Math.floor(Math.abs(m)/60)} h ${String(Math.abs(m)%60).padStart(2,"0")} min`;
+
+/* apply=false renders the summary without writing to the fields — used on
+   reload, so a stored METAR reports its age without clobbering edited values. */
+function applyMetar(which, apply){
+  const S   = which === "dep" ? DEP : ARR;
+  const box = which === "dep" ? "depMetar" : "arrMetar";
+  const out = which === "dep" ? "depMetarOut" : "arrMetarOut";
+  const raw = $(box).value;
+  if (!raw.trim()){ $(out).innerHTML = ""; return; }
+  const r = parseMetar(raw);
+  if (!r){
+    $(out).innerHTML = flag("warn","Could not read that",
+      "No wind, temperature or pressure group was recognised. Paste the whole report, " +
+      "for example <code>METAR LFSN 081330Z AUTO 12004KT CAVOK 32/10 Q1017</code>.");
+    return;
+  }
+  const set = [];
+  if (apply){
+    if (r.temp !== undefined){ $(S.oat).value  = r.temp; set.push(`OAT ${r.temp} °C`); }
+    if (r.qnh  !== undefined){ $(S.qnh).value  = r.qnh;  set.push(`QNH ${r.qnh} hPa`); }
+    if (r.wspd !== undefined){ $(S.wspd).value = r.wspd; }
+    if (r.wdir !== undefined){ $(S.wdir).value = r.wdir; }
+    if (r.wspd !== undefined)
+      set.push(r.vrb ? `wind ${r.wspd} kt (direction left as entered)`
+                     : `wind ${String(r.wdir).padStart(3,"0")}°T / ${r.wspd} kt`);
+    if (r.wspd !== undefined) $(S.wref).value = "true";   // METAR winds are true
+  }
+  let f = "";
+  const age = metarAgeMin(r);
+  const head = `${r.station || "—"}${r.day !== undefined
+      ? ` · ${String(r.day).padStart(2,"0")} ${String(r.hh).padStart(2,"0")}:${String(r.mi).padStart(2,"0")}Z` : ""}`;
+  f += flag(age !== null && age > 60 ? "warn" : "ok",
+      apply ? `Applied — ${head}` : `Stored report — ${head}`,
+      (set.length ? set.join(" · ") + ". " : "") +
+      (age === null ? "" : age < 0 ? `Timestamped ${hhmm(age)} in the future — check it.`
+                                   : `Observed ${hhmm(age)} ago.`) +
+      (apply ? " Wind reference set to True." : " Re-paste to apply."));
+
+  // Station mismatch is the mistake worth catching: right numbers, wrong field.
+  const icao = ($(S.icao).value || "").toUpperCase().trim();
+  if (r.station && icao && r.station !== icao)
+    f += flag("bad","This report is for a different aerodrome",
+      `The METAR is <b>${r.station}</b> but this panel is set to <b>${icao}</b>.`);
+  if (age !== null && age > 60)
+    f += flag("warn","Report is more than an hour old",
+      "Weather this stale should not drive a departure calculation — fetch a current one.");
+  if (r.vrb)
+    f += flag("warn","Variable wind direction",
+      `The report gives VRB${String(r.wspd).padStart(2,"0")}KT, so no direction can be resolved. ` +
+      `Set the wind direction yourself — for a runway decision, assume the least favourable.`);
+  if (r.gust)
+    f += flag("warn","Gusting",
+      `Steady ${r.wspd} kt gusting <b>${r.gust} kt</b>. Only the steady wind was filled in; ` +
+      `consider entering the gust for the crosswind and tailwind checks.`);
+  if (r.varFrom !== undefined)
+    f += flag("info","Variable between two directions",
+      `Wind varying ${String(r.varFrom).padStart(3,"0")}° to ${String(r.varTo).padStart(3,"0")}°. ` +
+      `The mean direction was used; the extremes may give a worse crosswind.`);
+  if (r.inHg)
+    f += flag("info","Altimeter converted",
+      `A${String(Math.round(r.inHg*100)).padStart(4,"0")} = ${r.inHg.toFixed(2)} inHg → ${r.qnh} hPa.`);
+  if (r.temp === undefined || r.qnh === undefined)
+    f += flag("warn","Incomplete report",
+      `${r.temp === undefined ? "No temperature group. " : ""}` +
+      `${r.qnh === undefined ? "No pressure group. " : ""}Enter the missing value by hand.`);
+  $(out).innerHTML = f;
+  if (apply){ renderAll(); save(); }
+}
+
 /* ---------------------------- shell ---------------------------- */
 function renderRef(){
   let h = `<tr><th>Config</th><th>KIAS</th><th>KCAS</th></tr>`;
@@ -525,6 +654,7 @@ function renderAll(){
 
 const FIELDS = ["depIcao","elev","qnh","oat","wt","rwy","wdir","wspd","wref","varn","slope","surf","tora","toda","asda",
                 "arrIcao","aElev","aQnh","aOat","aWt","aRwy","aWdir","aWspd","aWref","aVarn","aSlope","aSurf","lda",
+                "depMetar","arrMetar",
                 "cFrom","cTo","crzAlt","crzFuel","crzDist","crzRes",
                 "wbEW","wbEA","wbP","wbFP","wbR","wbB","wbF","wbTF"];
 try {
@@ -547,7 +677,11 @@ function save(){
     localStorage.setItem("tb20.v3", JSON.stringify(o));
   } catch(e){ /* private mode — not worth interrupting the pilot over */ }
 }
-for (const k of FIELDS) if ($(k)) $(k).addEventListener("input", () => { renderAll(); save(); });
+for (const k of FIELDS)
+  if ($(k) && k !== "depMetar" && k !== "arrMetar")
+    $(k).addEventListener("input", () => { renderAll(); save(); });
+$("depMetar").addEventListener("input", () => applyMetar("dep", true));
+$("arrMetar").addEventListener("input", () => applyMetar("arr", true));
 $("wbBackoff").addEventListener("change", () => { renderAll(); save(); });
 
 $("tabs").addEventListener("click", e => {
@@ -595,3 +729,6 @@ for (const x of $("mixSeg").children) x.setAttribute("aria-pressed", x.dataset.m
 syncDeclaredFields();
 renderRef();
 renderAll();
+// show age of any stored report without overwriting edited fields
+applyMetar("dep", false);
+applyMetar("arr", false);
