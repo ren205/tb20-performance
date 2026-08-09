@@ -8,9 +8,9 @@
   <button aria-selected="true" data-t="fuel">Fuel</button>
   <button data-t="wb">W &amp; B</button>
   <button data-t="to">Take-off</button>
-  <button data-t="ldg">Landing</button>
   <button data-t="clb">Climb</button>
   <button data-t="crz">Cruise</button>
+  <button data-t="ldg">Landing</button>
   <button data-t="ref">Reference</button>
 </nav>
 
@@ -163,14 +163,21 @@
       <div class="grid">
         <div><label>Taxi &amp; start (L)</label><input id="fuTaxi" type="number" inputmode="decimal" value="8"></div>
         <div><label>Contingency (%)</label><input id="fuCont" type="number" inputmode="numeric" value="5"></div>
-        <div><label>Final reserve (min)</label><input id="fuRes" type="number" inputmode="numeric" value="45"></div>
         <div><label>Descent rate (ft/min)</label><input id="fuDrate" type="number" inputmode="numeric" value="500"></div>
         <div><label>Descent flow (L/h)</label><input id="fuDflow" type="number" inputmode="decimal" value="40"></div>
         <div><label>Usable fuel (L)</label><input id="fuUsable" type="number" inputmode="decimal" value="326"></div>
       </div>
+      <div style="margin-top:11px">
+        <label>Final reserve — NCO.OP.125</label>
+        <div class="seg" id="resSeg">
+          <button aria-pressed="false" data-r="10">VFR local · 10 min</button>
+          <button aria-pressed="true"  data-r="30">VFR day · 30 min</button>
+          <button aria-pressed="false" data-r="45">VFR night / IFR · 45 min</button>
+        </div>
+      </div>
       <div class="note" style="margin-top:10px">Climb and cruise come from the POH tables. <b>Descent is not in
       the POH</b> — the rate and flow above are your assumptions, and the descent leg is credited with distance
-      at cruise TAS. Final reserve is priced at the POH holding flow (32 L/h).</div>
+      at cruise TAS. Final reserve follows <b>NCO.OP.125</b> and is priced at the selected cruise consumption, because the rule requires that time <em>at normal cruising altitude</em>.</div>
     </div>
 
     <div class="card">
@@ -270,30 +277,6 @@
     </div>
   </section>
 
-  <!-- ===================== LANDING ===================== -->
-  <section id="ldg" hidden>
-    <div class="card">
-      <h2 id="ldHead">Landing distance</h2>
-      <div class="out">
-        <div class="big hero"><div class="lbl">From 50 ft — factored</div><div class="val" id="ld50">—</div></div>
-        <div class="big"><div class="lbl">Ground roll — factored</div><div class="val" id="ldRoll">—</div></div>
-        <div class="big"><div class="lbl">POH unfactored, 50 ft</div><div class="val" id="ldRaw">—</div></div>
-        <div class="big"><div class="lbl">Speed over 50 ft</div><div class="val" id="ldV">—</div></div>
-      </div>
-      <div class="fx" id="ldFx"></div>
-      <div id="ldFlags"></div>
-    </div>
-    <div class="card">
-      <h2>Runway requirement</h2>
-      <div class="scroll"><table id="ldChecks"></table></div>
-    </div>
-    <div class="card"><h2>Conditions assumed</h2>
-      <div class="note">Flaps landing · tar dry runway. Table weights 1075 / 1400 kg — interpolated.
-      Landing mass is entered in the Arrival panel — use the W&amp;B tab to work it out after trip fuel.
-Arrival slope is entered as <b>positive downhill</b>, the direction that lengthens a landing.</div>
-    </div>
-  </section>
-
   <!-- ===================== CLIMB ===================== -->
   <section id="clb" hidden>
     <div class="card">
@@ -344,6 +327,30 @@ Arrival slope is entered as <b>positive downhill</b>, the direction that lengthe
       <div class="note" style="margin-top:10px">POH level-flight tables at <b>1335 kg</b>, no antennas or
       external lights. Interpolated between tabulated altitudes (500–12 500 ft). A typical IFR antenna fit
       costs about −3.2 kt and −2% range. Endurance and range exclude climb, descent and taxi.</div>
+    </div>
+  </section>
+
+  <!-- ===================== LANDING ===================== -->
+  <section id="ldg" hidden>
+    <div class="card">
+      <h2 id="ldHead">Landing distance</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">From 50 ft — factored</div><div class="val" id="ld50">—</div></div>
+        <div class="big"><div class="lbl">Ground roll — factored</div><div class="val" id="ldRoll">—</div></div>
+        <div class="big"><div class="lbl">POH unfactored, 50 ft</div><div class="val" id="ldRaw">—</div></div>
+        <div class="big"><div class="lbl">Speed over 50 ft</div><div class="val" id="ldV">—</div></div>
+      </div>
+      <div class="fx" id="ldFx"></div>
+      <div id="ldFlags"></div>
+    </div>
+    <div class="card">
+      <h2>Runway requirement</h2>
+      <div class="scroll"><table id="ldChecks"></table></div>
+    </div>
+    <div class="card"><h2>Conditions assumed</h2>
+      <div class="note">Flaps landing · tar dry runway. Table weights 1075 / 1400 kg — interpolated.
+      Landing mass is entered in the Arrival panel — use the W&amp;B tab to work it out after trip fuel.
+Arrival slope is entered as <b>positive downhill</b>, the direction that lengthens a landing.</div>
     </div>
   </section>
 

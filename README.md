@@ -35,12 +35,16 @@ against the paper manual before flying them.**
 
 | Tab | Source |
 |---|---|
+| Fuel | POH climb and cruise tables, reserve per NCO.OP.125 |
+| W & B | POH 2.9 (limits) and Fig 6.3 (arms) |
 | Take-off | POH 5.8–5.9 (Fig 5.6 / 5.7) |
-| Landing | POH 5.30–5.31 (Fig 5.27 / 5.28) |
 | Climb | POH 5.10–5.13 (Fig 5.8–5.11) |
 | Cruise | POH 5.16–5.29 (Fig 5.13–5.26), both mixtures, 7 altitudes |
-| W & B | POH 2.9 (limits) and Fig 6.3 (arms) |
-| Reference | Stall speeds, airspeed calibration, holding, antenna penalties |
+| Landing | POH 5.30–5.31 (Fig 5.27 / 5.28) |
+| Reference | V-speeds, ASI markings, glide, stall speeds, calibration, holding |
+
+Tabs run in the order of a flight: fuel, loading, take-off, climb, cruise,
+landing.
 
 Interpolation is linear on weight, pressure altitude and ISA deviation. Every
 tabulated corner reproduces the POH exactly. Beyond the tables, temperature and
@@ -81,8 +85,14 @@ source of every line.
 Climb comes from the POH climb tables and cruise from the POH level-flight
 tables. **Descent is not in the POH** — its rate and flow are your assumptions,
 labelled as such in the table, and the descent leg is credited with ground
-distance at cruise TAS. Final reserve is priced at the POH holding consumption
-(45% BHP, 8.5 US gal/h = 32 L/h).
+distance at cruise TAS.
+
+Final reserve follows **NCO.OP.125**, selectable as 10 min (VFR day, local and
+in sight of the aerodrome), 30 min (VFR day to the aerodrome of intended
+landing) or 45 min (**VFR by night, or IFR**). The rule requires that time
+*"at normal cruising altitude"*, so the reserve is priced at the selected cruise
+consumption rather than at a holding flow — holding would under-read it by about
+a third.
 
 The result hands forward: *Use total fuel in weight & balance* → W&B computes
 take-off and landing mass → *Use take-off mass in Departure* / *Use landing mass
@@ -180,7 +190,7 @@ tick the box confirming they are your aircraft's. A wrong empty mass produces a
 plausible answer with no other symptom, which is the one silent failure mode
 this tool could have.
 
-## Offline
+## Offline and updates
 
 The page registers a service worker that precaches the whole app and serves it
 cache-first, so offline is deterministic rather than dependent on the browser's
@@ -189,6 +199,12 @@ next to the build version.
 
 Verified by killing the web server and reloading: the page and all 1433
 aerodromes load from cache with every tab working.
+
+A new build does **not** take over on its own — swapping the page underneath
+someone midway through a mass-and-balance or departure calculation is worse than
+running a build a few minutes old. Instead the header shows *"A newer version is
+available"*; tapping it activates the update and reloads, keeping your entered
+figures. The build version in the header tells you which one you are on.
 
 The service worker only applies to the hosted copy over https (or localhost).
 A `TB20-Performance.html` opened straight off disk simply runs without it.

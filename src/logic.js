@@ -821,8 +821,12 @@ const vaAt = kg => 129 * Math.sqrt(clamp(kg, 700, MTOW_KG) / MTOW_KG);
  * such; the descent leg is credited with ground distance at cruise TAS.
  * Final reserve is priced at the POH holding flow (45% BHP, 8.5 US gal/h).
  * ================================================================== */
-const HOLD_LH = 8.5 * 3.785;          // POH 5.29 holding consumption, litres/hour
-const GAL_L   = 3.785;
+const GAL_L = 3.785;
+/* NCO.OP.125 final reserve. The rule reads "at normal cruising altitude", so
+   the reserve is priced at the selected cruise consumption, not at the POH
+   holding flow — holding would under-read it by roughly a third. */
+const RESERVES = { 10:"VFR local", 30:"VFR day", 45:"VFR night / IFR" };
+let resMin = 30;
 
 function fuelBands(){                  // populate the %BHP and RPM selects
   const mix = $("fuMix").value, pa = num("fuAlt");
@@ -875,7 +879,7 @@ function renderFuel(){
   const tripF = clF + crF + deF;
   const contF = tripF * num("fuCont") / 100;
   const altF  = altn > 0 ? (altn / tas * 60) / 60 * ffL : 0;
-  const resF  = num("fuRes") / 60 * HOLD_LH;
+  const resF  = resMin / 60 * ffL;
   const taxi  = num("fuTaxi");
   const total = taxi + tripF + contF + altF + resF;
   const usable = num("fuUsable");
@@ -896,7 +900,8 @@ function renderFuel(){
     `<tr class="rec"><td><b>Trip</b></td><td><b>${fmt(clD+crD+deD,1)}</b></td><td><b>${T(clT+crT+deT)}</b></td><td><b>${fmt(tripF,1)}</b></td><td></td></tr>` +
     `<tr><td>Contingency ${fmt(num("fuCont"))}%</td><td>—</td><td>—</td><td>${fmt(contF,1)}</td><td><span class="src">of trip fuel</span></td></tr>` +
     (altn > 0 ? `<tr><td>Alternate ${fmt(altn)} NM</td><td>${fmt(altn,1)}</td><td>${T(altn/tas*60)}</td><td>${fmt(altF,1)}</td><td><span class="src">same cruise setting</span></td></tr>` : "") +
-    `<tr><td>Final reserve ${fmt(num("fuRes"))} min</td><td>—</td><td>${T(num("fuRes"))}</td><td>${fmt(resF,1)}</td><td><span class="src">POH holding, 32 L/h</span></td></tr>` +
+    `<tr><td>Final reserve ${resMin} min — ${RESERVES[resMin]}</td><td>—</td><td>${T(resMin)}</td>` +
+    `<td>${fmt(resF,1)}</td><td><span class="src">NCO.OP.125, at cruise flow</span></td></tr>` +
     `<tr class="rec"><td><b>Total required</b></td><td></td><td></td><td><b>${fmt(total,1)}</b></td><td></td></tr>`;
 
   let f = "";
@@ -985,7 +990,7 @@ const FIELDS = ["depIcao","elev","qnh","oat","wt","rwy","wdir","wspd","wref","va
                 "arrIcao","aElev","aQnh","aOat","aWt","aRwy","aWdir","aWspd","aWref","aVarn","aSlope","aSurf","lda",
                 "depMetar","arrMetar","depRwy","arrRwy","depTime","arrTime",
                 "fuTrip","fuAlt","fuAltn","fuMass","fuMix","fuBhp","fuRpm","fuTaxi","fuCont",
-                "fuRes","fuDrate","fuDflow","fuUsable","glAlt",
+                "fuDrate","fuDflow","fuUsable","glAlt",
                 "cFrom","cTo","crzAlt","crzFuel","crzDist","crzRes",
                 "wbEW","wbEA","wbP","wbFP","wbR","wbB","wbF","wbTF"];
 try {
@@ -1000,12 +1005,13 @@ try {
   if (s._basis) basis = s._basis;
   if (s._backoff) $("wbBackoff").checked = s._backoff;
   if (s._wbConfirm) $("wbConfirm").checked = s._wbConfirm;
+  if (s._res) resMin = +s._res;
 } catch(e){ /* first run, or storage unavailable */ }
 
 function save(){
   try {
     const o = { _mix:mix, _basis:basis, _backoff:$("wbBackoff").checked,
-                _wbConfirm:$("wbConfirm").checked };
+                _wbConfirm:$("wbConfirm").checked, _res:resMin };
     for (const k of FIELDS) if ($(k)) o[k] = $(k).value;
     localStorage.setItem("tb20.v3", JSON.stringify(o));
   } catch(e){ /* private mode — not worth interrupting the pilot over */ }
@@ -1041,7 +1047,13 @@ $("wbToArr").addEventListener("click", () => {
   document.querySelector('#tabs button[data-t=ldg]').click();
   renderAll(); save();
 });
-for (const id of ["fuMix","fuAlt","fuBhp"])
+$("resSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  resMin = +b.dataset.r;
+  for (const x of $("resSeg").children) x.setAttribute("aria-pressed", x === b);
+  renderFuel(); save();
+});
+for (const id of ["fuMix","fuAlt","fuBhp","fuRpm"])
   $(id).addEventListener("change", () => { fuelBands(); renderFuel(); save(); });
 
 $("tabs").addEventListener("click", e => {
@@ -1084,6 +1096,7 @@ $("mixSeg").addEventListener("click", e => {
   renderCruise(); save();
 });
 for (const x of $("regSeg").children) x.setAttribute("aria-pressed", x.dataset.r === basis);
+for (const x of $("resSeg").children) x.setAttribute("aria-pressed", +x.dataset.r === resMin);
 for (const x of $("mixSeg").children) x.setAttribute("aria-pressed", x.dataset.m === mix);
 
 syncDeclaredFields();
@@ -1100,15 +1113,32 @@ document.querySelector("header .warnbar").insertAdjacentHTML("afterend",
    origin — a file:// copy simply carries on without it. */
 const secureOrigin = location.protocol === "https:" || location.hostname === "localhost";
 if ("serviceWorker" in navigator && secureOrigin){
+  const badge = txt => { const e = $("swState"); if (e) e.textContent = txt; };
+  const offerUpdate = worker => {
+    if (document.getElementById("swUpdate")) return;
+    document.querySelector("header").insertAdjacentHTML("beforeend",
+      `<div class="flag warn" id="swUpdate" style="margin-top:8px;cursor:pointer">
+         <b>A newer version is available</b>Tap to load it. Your entered figures are kept.</div>`);
+    $("swUpdate").addEventListener("click", () => {
+      worker.postMessage({ type:"SKIP_WAITING" });
+      navigator.serviceWorker.addEventListener("controllerchange", () => location.reload(), { once:true });
+    });
+  };
   navigator.serviceWorker.register("sw.js").then(reg => {
-    const mark = () => { const e = $("swState"); if (e) e.textContent = "offline ready"; };
-    if (navigator.serviceWorker.controller) mark();
+    if (navigator.serviceWorker.controller) badge("offline ready");
+    navigator.serviceWorker.ready.then(() => badge("offline ready"));
+    if (reg.waiting) offerUpdate(reg.waiting);          // update downloaded on a previous visit
     reg.addEventListener("updatefound", () => {
       const w = reg.installing;
-      w && w.addEventListener("statechange", () => { if (w.state === "activated") mark(); });
+      w && w.addEventListener("statechange", () => {
+        if (w.state === "installed"){
+          if (navigator.serviceWorker.controller) offerUpdate(w);   // an update, not a first install
+          else badge("offline ready");
+        }
+      });
     });
-    navigator.serviceWorker.ready.then(mark);
-  }).catch(() => { const e = $("swState"); if (e) e.textContent = "offline not cached"; });
+    reg.update();                                       // check for a newer build on each launch
+  }).catch(() => badge("offline not cached"));
 }
 // show age of any stored report without overwriting edited fields
 applyMetar("dep", false);
