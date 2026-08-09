@@ -926,6 +926,80 @@ function renderFuel(){
 }
 let FUEL_TOTAL = 0, WB_TOW = 0, WB_LDW = 0;
 
+
+/* ==================================================================
+ * Route
+ *
+ * The route is the first thing known about a flight, so it is entered once
+ * here and drives everything downstream: the departure and arrival panels,
+ * the climb and descent legs, and the trip and alternate distances.
+ *
+ * Distances are great-circle between the bundled aerodrome coordinates —
+ * the direct track, not the route actually flown. They are written into the
+ * distance fields as a starting point and can be overridden; the route card
+ * keeps showing the direct figure so an override is visible rather than silent.
+ * ================================================================== */
+function gcNM(a, b){
+  const R = 3440.065, rad = Math.PI / 180;
+  const p1 = a[2] * rad, p2 = b[2] * rad;
+  const dp = p2 - p1, dl = (b[3] - a[3]) * rad;
+  const h = Math.sin(dp/2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+function gcTrack(a, b){                      // initial great-circle track, degrees true
+  const rad = Math.PI / 180;
+  const p1 = a[2] * rad, p2 = b[2] * rad, dl = (b[3] - a[3]) * rad;
+  const y = Math.sin(dl) * Math.cos(p2);
+  const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+  return (Math.atan2(y, x) / rad + 360) % 360;
+}
+const deg3 = d => String(Math.round(d) % 360).padStart(3, "0");
+
+let ROUTE = { trip:null, altn:null };
+
+function syncRoute(fillDistances){
+  const up = id => ($(id).value || "").toUpperCase().trim();
+  const dep = up("rtDep"), dest = up("rtDest"), altn = up("rtAltn");
+  if ($("rtDep").value !== dep) $("rtDep").value = dep;
+  if ($("rtDest").value !== dest) $("rtDest").value = dest;
+  if ($("rtAltn").value !== altn) $("rtAltn").value = altn;
+
+  // feed the performance panels
+  $("depIcao").value = dep;
+  $("arrIcao").value = dest;
+  syncAerodrome("dep"); syncAerodrome("arr");
+
+  const A = adLookup(dep), B = adLookup(dest), C = adLookup(altn);
+  ROUTE.trip = (A && B) ? gcNM(A, B) : null;
+  ROUTE.altn = (B && C) ? gcNM(B, C) : null;
+  if (fillDistances){
+    if (ROUTE.trip != null) $("fuTrip").value = Math.round(ROUTE.trip);
+    if (ROUTE.altn != null) $("fuAltn").value = Math.round(ROUTE.altn);
+  }
+
+  let h = "";
+  const leg = (from, to, a, b, nm) => a && b
+    ? `<tr><td>${from} → ${to}</td><td>${a[0].slice(0,26)} → ${b[0].slice(0,26)}</td>` +
+      `<td>${deg3(gcTrack(a,b))}°T</td><td>${fmt(nm,0)} NM</td></tr>`
+    : "";
+  if (A || B || C){
+    h += `<div class="scroll"><table><tr><th>Leg</th><th></th><th>Track</th><th>Direct</th></tr>` +
+         leg(dep, dest, A, B, ROUTE.trip) + leg(dest, altn, B, C, ROUTE.altn) + `</table></div>`;
+  }
+  const miss = [[dep,A],[dest,B],[altn,C]].filter(([c,r]) => c && !r).map(([c]) => c);
+  if (miss.length) h += flag("warn","Not in the bundled data",
+      `${miss.join(", ")} — enter that aerodrome's elevation, runway and distances by hand.`);
+  if (ROUTE.trip != null && num("fuTrip") && Math.abs(num("fuTrip") - ROUTE.trip) > 1)
+    h += flag("info","Trip distance overridden",
+      `Using ${fmt(num("fuTrip"))} NM against a direct track of ${fmt(ROUTE.trip,0)} NM.`);
+  if (ROUTE.altn != null && num("fuAltn") && Math.abs(num("fuAltn") - ROUTE.altn) > 1)
+    h += flag("info","Alternate distance overridden",
+      `Using ${fmt(num("fuAltn"))} NM against a direct track of ${fmt(ROUTE.altn,0)} NM.`);
+  if (dep && dest && dep === dest)
+    h += flag("info","Departure and destination are the same","A local flight — set the trip distance by hand.");
+  $("rtOut").innerHTML = h;
+}
+
 /* ---------------------------- shell ---------------------------- */
 function renderRef(){
   $("vTable").innerHTML = `<tr><th>Speed</th><th></th><th>KCAS</th><th>KIAS</th><th>Remarks</th></tr>` +
@@ -985,7 +1059,7 @@ function renderAll(){
   renderConditions(dep, DEP_IDS, "condFlags", false);
   renderConditions(arr, ARR_IDS, "aCondFlags", true);
   renderTakeoff(dep); renderLanding(arr); renderClimb(dep); renderCruise(); renderWB();
-  renderFuel(); renderRefLive(dep);
+  renderFuel(); renderRefLive(dep); syncRoute(false);
   // aerodrome identifiers on the result headings
   $("toHead").textContent = dep.icao ? `Take-off distance — ${dep.icao}` : "Take-off distance";
   $("ldHead").textContent = arr.icao ? `Landing distance — ${arr.icao}` : "Landing distance";
@@ -994,7 +1068,7 @@ function renderAll(){
 const FIELDS = ["depIcao","elev","qnh","oat","wt","rwy","wdir","wspd","wref","varn","slope","surf","tora","toda","asda",
                 "arrIcao","aElev","aQnh","aOat","aWt","aRwy","aWdir","aWspd","aWref","aVarn","aSlope","aSurf","lda",
                 "depMetar","arrMetar","depRwy","arrRwy","depTime","arrTime",
-                "fuTrip","fuAlt","fuAltn","fuMass","fuMix","fuBhp","fuRpm","fuTaxi","fuCont",
+                "rtDep","rtDest","rtAltn","fuTrip","fuAlt","fuAltn","fuMass","fuMix","fuBhp","fuRpm","fuTaxi","fuCont",
                 "fuDrate","fuDflow","fuUsable","glAlt",
                 "cFrom","cTo","crzAlt","crzFuel","crzDist","crzRes",
                 "wbEW","wbEA","wbP","wbFP","wbR","wbB","wbF","wbTF"];
@@ -1026,8 +1100,8 @@ for (const k of FIELDS)
     $(k).addEventListener("input", () => { renderAll(); save(); });
 $("depMetar").addEventListener("input", () => applyMetar("dep", true));
 $("arrMetar").addEventListener("input", () => applyMetar("arr", true));
-$("depIcao").addEventListener("input", () => { syncAerodrome("dep"); save(); });
-$("arrIcao").addEventListener("input", () => { syncAerodrome("arr"); save(); });
+for (const id of ["rtDep","rtDest","rtAltn"])
+  $(id).addEventListener("input", () => { syncRoute(true); renderAll(); save(); });
 $("depRwy").addEventListener("change", () => applyRunway("dep"));
 $("arrRwy").addEventListener("change", () => applyRunway("arr"));
 $("depFetch").addEventListener("click", () => fetchForecast("dep"));
@@ -1113,6 +1187,7 @@ for (const x of $("resSeg").children) x.setAttribute("aria-pressed", +x.dataset.
 for (const x of $("mixSeg").children) x.setAttribute("aria-pressed", x.dataset.m === mix);
 
 syncDeclaredFields();
+syncRoute(false);   // restore the route without overwriting edited distances
 fuelBands();
 renderRef();
 renderAll();

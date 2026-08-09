@@ -76,6 +76,19 @@ tests with "or", but its predecessor EU-OPS 1.530 used "and", and an "or"
 reading would make route (2) less demanding than route (1). The app requires all
 three and shows each separately.
 
+## Route
+
+The Fuel tab opens with the route — departure, destination and alternate ICAO.
+That is the single place identifiers are entered; the Take-off and Landing
+panels take theirs from it and show them read-only, so the two can never
+disagree.
+
+Entering a route computes the **great-circle distance and initial true track**
+for each leg from the bundled coordinates, and writes the distances into the
+trip and alternate fields. Those remain editable — the direct figure stays on
+screen, and an override is called out rather than hidden, since a real route is
+rarely the direct track.
+
 ## Fuel planning
 
 The first tab builds a full fuel plan: taxi, climb, cruise, descent,

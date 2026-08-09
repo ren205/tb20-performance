@@ -20,7 +20,7 @@
   <div class="card" id="condDep">
     <h2>Departure</h2>
     <div class="grid">
-      <div><label>Departure ICAO</label><input id="depIcao" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFSN" value=""></div>
+      <div><label>Departure ICAO</label><input id="depIcao" type="text" readonly tabindex="-1" placeholder="set on Fuel tab" value=""></div>
       <div><label>Runway</label><select id="depRwy" disabled><option value="">—</option></select></div>
       <div><label>Planned time (UTC)</label><input id="depTime" type="datetime-local"></div>
       <div><label>Field elev (ft)</label><input id="elev" type="number" inputmode="numeric" value="0"></div>
@@ -75,7 +75,7 @@
   <div class="card" id="condArr" hidden>
     <h2>Arrival</h2>
     <div class="grid">
-      <div><label>Arrival ICAO</label><input id="arrIcao" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFST" value=""></div>
+      <div><label>Arrival ICAO</label><input id="arrIcao" type="text" readonly tabindex="-1" placeholder="set on Fuel tab" value=""></div>
       <div><label>Runway</label><select id="arrRwy" disabled><option value="">—</option></select></div>
       <div><label>Planned time (UTC)</label><input id="arrTime" type="datetime-local"></div>
       <div><label>Field elev (ft)</label><input id="aElev" type="number" inputmode="numeric" value="0"></div>
@@ -141,6 +141,16 @@
 
   <!-- ===================== FUEL ===================== -->
   <section id="fuel">
+    <div class="card">
+      <h2>Route</h2>
+      <div class="grid">
+        <div><label>Departure ICAO</label><input id="rtDep" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFSN"></div>
+        <div><label>Destination ICAO</label><input id="rtDest" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFST"></div>
+        <div><label>Alternate ICAO</label><input id="rtAltn" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="optional"></div>
+      </div>
+      <div id="rtOut"></div>
+    </div>
+
     <div class="card">
       <h2>Trip</h2>
       <div class="grid">
