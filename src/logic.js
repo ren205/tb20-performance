@@ -89,7 +89,9 @@ const fwdLimitAt = kg => interp(clamp(kg, WB.fwdLimit[0][0], WB.fwdLimit[2][0]),
 /* ------------------------------------------------------------------ */
 const $ = id => document.getElementById(id);
 const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : 0; };
-let basis = "none", mix = "bestPower";
+// Part-NCO by default: Unfactored is raw test-pilot data with no margin,
+// which is not something to land on by forgetting to choose.
+let basis = "nco", mix = "bestPower";
 
 /* Field sets. Take-off and landing are separate aerodromes, so each carries
    its own weather, runway and declared distances. */

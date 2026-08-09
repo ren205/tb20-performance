@@ -56,6 +56,10 @@ distance on a hot or high day — and the app flags loudly when it does so.
 Selectable on the take-off and landing tabs. Every factor applied is itemised on
 screen with its numeric value, its source citation and a running distance.
 
+**Part-NCO is the default.** Unfactored gives raw test-pilot figures with no
+margin at all, which is not a state to arrive at by forgetting to choose. Your
+own selection is remembered and overrides the default.
+
 - **Unfactored** — POH corrections only (surface and wind per POH 5.7). No margin.
 - **Part-NCO** — Part-NCO prescribes *no* performance factors; NCO.POL.110 requires
   only that performance be "adequate", and its AMC/GM adds nothing. This basis

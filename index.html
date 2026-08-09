@@ -243,8 +243,8 @@ svg{width:100%;height:auto;display:block}
   <div class="card" id="regCard">
     <h2>Factoring basis</h2>
     <div class="seg" id="regSeg">
-      <button aria-pressed="true" data-r="none">Unfactored</button>
-      <button data-r="nco">Part-NCO</button>
+      <button aria-pressed="false" data-r="none">Unfactored</button>
+      <button aria-pressed="true" data-r="nco">Part-NCO</button>
       <button data-r="cat">Part-CAT B</button>
     </div>
     <div id="regNote"></div>
@@ -826,7 +826,9 @@ const fwdLimitAt = kg => interp(clamp(kg, WB.fwdLimit[0][0], WB.fwdLimit[2][0]),
 /* ------------------------------------------------------------------ */
 const $ = id => document.getElementById(id);
 const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : 0; };
-let basis = "none", mix = "bestPower";
+// Part-NCO by default: Unfactored is raw test-pilot data with no margin,
+// which is not something to land on by forgetting to choose.
+let basis = "nco", mix = "bestPower";
 
 /* Field sets. Take-off and landing are separate aerodromes, so each carries
    its own weather, runway and declared distances. */
@@ -1701,7 +1703,7 @@ function renderFuel(){
 }
 let FUEL_TOTAL = 0, WB_TOW = 0, WB_LDW = 0, WB_CG = 0, WB_LDCG = 0;
 let TO_ROLL = 0, TO_50 = 0, TO_VLO = 0, TO_V50 = 0, LD_ROLL = 0, LD_50 = 0, LD_V50 = 0;
-const BUILD = "2026.08.09.1356";
+const BUILD = "2026.08.09.1401";
 
 
 /* ==================================================================
@@ -2248,7 +2250,7 @@ renderAll();
 
 /* Version stamp — so you can tell which build is on the iPad. */
 document.querySelector("header .warnbar").insertAdjacentHTML("afterend",
-  `<div class="ver">build 2026.08.09.1356 · <span id="swState">standalone</span></div>`);
+  `<div class="ver">build 2026.08.09.1401 · <span id="swState">standalone</span></div>`);
 
 /* Register the service worker so offline is deterministic instead of relying
    on the browser's cache heuristics. Only meaningful over https from a real

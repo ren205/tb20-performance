@@ -151,10 +151,8 @@ const fmt = (v,d=0) => Number.isFinite(v) ? v.toLocaleString("en-GB",{minimumFra
 const M_PER_FT = 0.3048, FT_PER_M = 1/M_PER_FT, LB_PER_KG = 2.2046226218;
 const toM = ft => ft*M_PER_FT;
 const dist = ft => `${fmt(toM(ft))} <small>m / ${fmt(ft)} ft</small>`;
-const PLEVELS = [1000,975,950,925,900,850,800,700,600,500];
 const deltaP  = paFt => Math.pow(1 - 6.87535e-6 * paFt, 5.25588);
 const plToAlt = hPa  => (1 - Math.pow(hPa / 1013.25, 1 / 5.25588)) / 6.87535e-6;
-const nearestPL = paFt => PLEVELS.reduce((a,b)=>Math.abs(plToAlt(b)-paFt)<Math.abs(plToAlt(a)-paFt)?b:a);
 function tasFrom(cas, paFt, oatC){
   const sigma = deltaP(paFt) / ((oatC + 273.15) / 288.15);
   return cas / Math.sqrt(sigma);
@@ -207,12 +205,6 @@ function midpoint(a, b){
   const p3 = Math.atan2(Math.sin(p1)+Math.sin(p2), Math.sqrt((Math.cos(p1)+bx)**2 + by**2));
   return [0,0, p3*deg, (l1 + Math.atan2(by, Math.cos(p1)+bx))*deg];
 }
-function slopeUp(r, n){
-  const near = n === 0 ? r[4] : r[5], far = n === 0 ? r[5] : r[4];
-  if (near == null || far == null || !r[2]) return null;
-  const s = (far - near) / r[2] * 100;
-  return Math.abs(s) > 5 ? null : s;        // implausible, treat as unknown
-}
 const qfuOf = ident => (parseInt(ident, 10) % 36 || 36) * 10;
 const vaAt = kg => 129 * Math.sqrt(clamp(kg, 700, MTOW_KG) / MTOW_KG);
 const glideNM = (ft, g) => ft * g.ld / 6076.12;
@@ -237,6 +229,8 @@ function cruiseAt(mixKey, pa){
 }
 const fwdLimitAt = kg => interp(clamp(kg, WB.fwdLimit[0][0], WB.fwdLimit[2][0]),
                                 WB.fwdLimit.map(p=>p[0]), WB.fwdLimit.map(p=>p[1]));
+const PLEVELS = [1000,975,950,925,900,850,800,700,600,500];
+const nearestPL = paFt => PLEVELS.reduce((a,b)=>Math.abs(plToAlt(b)-paFt)<Math.abs(plToAlt(a)-paFt)?b:a);
 const SUN_Z = 90.8333, CIVIL_Z = 96;
 const WB = { fwdLimit:[[1000,913],[1250,949],[1400,1071]], aftLimit:1205,
              arms:{ front:{mm:45.38*25.4}, frontBackoff:{mm:47.44*25.4}, rear:{mm:80*25.4},
