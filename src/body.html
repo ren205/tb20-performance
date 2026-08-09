@@ -11,6 +11,7 @@
   <button data-t="clb">Climb</button>
   <button data-t="crz">Cruise</button>
   <button data-t="ldg">Landing</button>
+  <button data-t="sum">Summary</button>
   <button data-t="ref">Reference</button>
 </nav>
 
@@ -50,6 +51,7 @@
       <div id="fAsda"><label>ASDA (m)</label><input id="asda" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
     </div>
     <div id="depAdInfo"></div>
+    <div id="depBestRwy"></div>
     <div class="metar">
       <button type="button" id="depFetch" class="btn">Fetch forecast for the planned time</button>
       <div id="depFxOut"></div>
@@ -103,6 +105,7 @@
       <div><label>LDA (m)</label><input id="lda" type="number" inputmode="numeric" value="0" placeholder="0 = skip"></div>
     </div>
     <div id="arrAdInfo"></div>
+    <div id="arrBestRwy"></div>
     <div class="metar">
       <button type="button" id="arrFetch" class="btn">Fetch forecast for the planned time</button>
       <div id="arrFxOut"></div>
@@ -148,7 +151,11 @@
         <div><label>Destination ICAO</label><input id="rtDest" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFST"></div>
         <div><label>Alternate ICAO</label><input id="rtAltn" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="optional"></div>
       </div>
+      <div class="grid" style="margin-top:11px">
+        <div><label>Off-blocks (UTC)</label><input id="rtEtd" type="datetime-local"></div>
+      </div>
       <div id="rtOut"></div>
+      <div id="sunOut"></div>
     </div>
 
     <div class="card">
@@ -166,6 +173,10 @@
         <div><label>RPM</label><select id="fuRpm"></select></div>
       </div>
       <div id="fuFrom"></div>
+      <div class="metar">
+        <button type="button" id="fuWind" class="btn">Fetch winds aloft for the cruise level</button>
+        <div id="fuWindOut"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -361,6 +372,21 @@
       <div class="note">Flaps landing · tar dry runway. Table weights 1075 / 1400 kg — interpolated.
       Landing mass is entered in the Arrival panel — use the W&amp;B tab to work it out after trip fuel.
 Arrival slope is entered as <b>positive downhill</b>, the direction that lengthens a landing.</div>
+    </div>
+  </section>
+
+  <!-- ===================== SUMMARY ===================== -->
+  <section id="sum" hidden>
+    <div class="card">
+      <h2>Flight summary</h2>
+      <div class="note" style="margin-bottom:11px">One page for the folder. Everything below is read from the
+      other tabs — change it there, not here.</div>
+      <div class="grid">
+        <div><button type="button" id="sumCopy" class="btn">Copy to clipboard</button></div>
+        <div><button type="button" id="sumMail" class="btn">Send by email</button></div>
+        <div><button type="button" id="sumPrint" class="btn">Print</button></div>
+      </div>
+      <div id="sumOut" style="margin-top:12px"></div>
     </div>
   </section>
 

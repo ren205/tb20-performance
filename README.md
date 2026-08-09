@@ -228,6 +228,41 @@ The Reference and result tabs print reasonably — `@media print` drops the
 navigation, buttons and text boxes, switches to a light palette and expands
 every tab, so a single print gives one paper copy of the whole plan.
 
+## Verification
+
+    node test/verify-tables.js     # 1040 checks
+    node test/verify-logic.js      #   79 checks
+
+`test/verify_core.js` is the app's own data and pure functions with the DOM
+stripped out, so the tests exercise the shipping code rather than a copy.
+
+What is checked:
+
+- **Every tabulated POH cell** — take-off, landing, rate of climb and
+  climb time/fuel/distance — is returned exactly at its own grid point, and
+  every cruise value reproduces at each tabulated altitude.
+- **An independent physics cross-check of the cruise columns.** TAS computed
+  from the POH's own CAS by `TAS = CAS / √σ` at ISA reproduces the tabulated
+  TAS to within 0.91 kt across every entry, which would not hold if a digit in
+  either column had been mistyped.
+- **Monotonicity** — distance rises with altitude, temperature and mass; climb
+  rate falls with altitude and mass; roll is always shorter than the 50 ft
+  distance; fuel flow and TAS fall with power; manifold pressure rises as RPM
+  falls; best economy always burns less than best power at the same setting.
+- **Conservative extrapolation** beyond the tables, and clamping below the
+  lightest tabulated mass.
+- **Units, atmosphere and true airspeed**, including the pressure-level mapping.
+- **Wind triangle** against closed-form cases (pure head, tail and crosswind).
+- **Great-circle** distance and track, including reciprocals and one degree of
+  latitude being 60 NM.
+- **Sun times** against an independently computed reference.
+- **Weight and balance** against the POH's own worked example, Figure 6.3.
+
+The correction factors and the fuel chain are verified in the browser, since
+they depend on the DOM: the regulatory multipliers, the CAT wind credit and
+route (2) tests, the POH wind and surface corrections, slope, and every line of
+the fuel plan summing to its total.
+
 ## Editing
 
 `src/` holds the page split into parts. After editing, run:
