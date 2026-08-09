@@ -5,6 +5,9 @@
 <meta name="apple-mobile-web-app-title" content="TB20 Perf">
 <meta name="theme-color" content="#0d1117">
 <title>TB20 Performance</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
 
 <style>
 :root{
@@ -89,4 +92,16 @@ tr.rec td{background:rgba(88,166,255,.09)}
 .fx .f{color:var(--ink);white-space:nowrap}
 .fx .n{color:var(--dim)}
 svg{width:100%;height:auto;display:block}
+.ver{font-size:10.5px;color:var(--dim);margin-top:5px;font-family:var(--mono)}
+@media print{
+  :root{--bg:#fff;--panel:#fff;--panel2:#fff;--line:#bbb;--ink:#000;--dim:#444;--accent:#0057b8}
+  html,body{background:#fff;color:#000}
+  header{position:static;border-bottom:2px solid #000}
+  nav,.btn,textarea,#regCard .seg{display:none !important}
+  section[hidden]{display:block !important}          /* print every tab, not just the open one */
+  .card{break-inside:avoid;border:1px solid #bbb;margin-bottom:8px}
+  .big .val{font-size:22px}
+  input,select{border:1px solid #bbb;background:#fff;color:#000}
+  a{color:#000}
+}
 </style>

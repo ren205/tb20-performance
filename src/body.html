@@ -5,11 +5,12 @@
 </header>
 
 <nav id="tabs">
-  <button aria-selected="true" data-t="to">Take-off</button>
+  <button aria-selected="true" data-t="fuel">Fuel</button>
+  <button data-t="wb">W &amp; B</button>
+  <button data-t="to">Take-off</button>
   <button data-t="ldg">Landing</button>
   <button data-t="clb">Climb</button>
   <button data-t="crz">Cruise</button>
-  <button data-t="wb">W &amp; B</button>
   <button data-t="ref">Reference</button>
 </nav>
 
@@ -138,6 +139,110 @@
     <div id="regNote"></div>
   </div>
 
+  <!-- ===================== FUEL ===================== -->
+  <section id="fuel">
+    <div class="card">
+      <h2>Trip</h2>
+      <div class="grid">
+        <div><label>Trip distance (NM)</label><input id="fuTrip" type="number" inputmode="numeric" value="0"></div>
+        <div><label>Cruise PA (ft)</label><input id="fuAlt" type="number" inputmode="numeric" value="6500"></div>
+        <div><label>Alternate (NM)</label><input id="fuAltn" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
+        <div><label>Mass in climb (kg)</label><input id="fuMass" type="number" inputmode="numeric" value="1320"></div>
+        <div><label>Mixture</label><select id="fuMix">
+          <option value="bestPower">Best power</option>
+          <option value="bestEconomy" selected>Best economy</option>
+        </select></div>
+        <div><label>% BHP</label><select id="fuBhp"></select></div>
+        <div><label>RPM</label><select id="fuRpm"></select></div>
+      </div>
+      <div id="fuFrom"></div>
+    </div>
+
+    <div class="card">
+      <h2>Allowances</h2>
+      <div class="grid">
+        <div><label>Taxi &amp; start (L)</label><input id="fuTaxi" type="number" inputmode="decimal" value="8"></div>
+        <div><label>Contingency (%)</label><input id="fuCont" type="number" inputmode="numeric" value="5"></div>
+        <div><label>Final reserve (min)</label><input id="fuRes" type="number" inputmode="numeric" value="45"></div>
+        <div><label>Descent rate (ft/min)</label><input id="fuDrate" type="number" inputmode="numeric" value="500"></div>
+        <div><label>Descent flow (L/h)</label><input id="fuDflow" type="number" inputmode="decimal" value="40"></div>
+        <div><label>Usable fuel (L)</label><input id="fuUsable" type="number" inputmode="decimal" value="326"></div>
+      </div>
+      <div class="note" style="margin-top:10px">Climb and cruise come from the POH tables. <b>Descent is not in
+      the POH</b> — the rate and flow above are your assumptions, and the descent leg is credited with distance
+      at cruise TAS. Final reserve is priced at the POH holding flow (32 L/h).</div>
+    </div>
+
+    <div class="card">
+      <h2>Fuel plan</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">Total required</div><div class="val" id="fuTotal">—</div></div>
+        <div class="big"><div class="lbl">Remaining of usable</div><div class="val" id="fuLeft">—</div></div>
+        <div class="big"><div class="lbl">Trip time</div><div class="val" id="fuTime">—</div></div>
+      </div>
+      <div class="scroll" style="margin-top:12px"><table id="fuTable"></table></div>
+      <div id="fuFlags"></div>
+      <div style="margin-top:11px"><button type="button" id="fuToWb" class="btn">Use total fuel in weight &amp; balance</button></div>
+    </div>
+  </section>
+
+  <!-- ===================== WEIGHT & BALANCE ===================== -->
+  <section id="wb" hidden>
+    <div class="card">
+      <h2>Loading — all masses in kg</h2>
+      <div class="grid">
+        <div><label>Empty mass (kg)</label><input id="wbEW" type="number" inputmode="decimal" value="846.5"></div>
+        <div><label>Empty arm (mm)</label><input id="wbEA" type="number" inputmode="decimal" step="0.1" value="961.6"></div>
+        <div><label>Pilot (kg)</label><input id="wbP" type="number" inputmode="decimal" value="80"></div>
+        <div><label>Front pax (kg)</label><input id="wbFP" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Rear pax (kg)</label><input id="wbR" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Baggage (kg)</label><input id="wbB" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Fuel (L)</label><input id="wbF" type="number" inputmode="decimal" value="200"></div>
+        <div><label>Trip fuel (L)</label><input id="wbTF" type="number" inputmode="decimal" value="0"></div>
+      </div>
+      <div style="margin-top:10px">
+        <label class="chk"><input type="checkbox" id="wbBackoff">Front seats have the 2-in back-off option (0800.xxM) — arm 47.44 in</label>
+      </div>
+      <div style="margin-top:10px">
+        <label class="chk"><input type="checkbox" id="wbConfirm">The empty mass and arm above are <b>my aircraft's</b>, from its current weighing form</label>
+      </div>
+      <div id="wbOwnFlag"></div>
+      <div class="note" style="margin-top:9px">The defaults are the POH's <b>sample</b> aeroplane
+      (846.5 kg at 961.6 mm) and are almost certainly not yours. If your weighing form gives the arm in
+      inches, multiply by 25.4.</div>
+    </div>
+
+    <div class="card">
+      <h2>Result</h2>
+      <div class="out">
+        <div class="big hero"><div class="lbl">Take-off mass</div><div class="val" id="wbTOW">—</div></div>
+        <div class="big"><div class="lbl">CG at take-off</div><div class="val" id="wbCG">—</div></div>
+        <div class="big"><div class="lbl">CG limits at that mass</div><div class="val" id="wbLim">—</div></div>
+      </div>
+      <div id="wbFlags"></div>
+      <div class="grid" style="margin-top:11px">
+        <button type="button" id="wbToDep" class="btn">Use take-off mass in Departure</button>
+        <button type="button" id="wbToArr" class="btn">Use landing mass in Arrival</button>
+      </div>
+      <div class="scroll" style="margin-top:12px"><table id="wbTable"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Envelope</h2>
+      <div id="wbChart"></div>
+      <div class="note" style="margin-top:8px">Datum is the <b>front face of the firewall</b>. Forward limit varies
+      in a straight line between 913 mm at 1000 kg, 949 mm at 1250 kg and 1071 mm at 1400 kg; aft limit is
+      1205 mm at all masses (landing gear extended). These are the POH's own metric figures, which are
+      rounded independently of the inch values rather than converted from them.
+      ● take-off, ○ after trip fuel.</div>
+    </div>
+
+    <div class="card"><h2>Arms and limits used</h2>
+      <div class="note" style="margin-bottom:10px">The POH states the CG limits and the baggage station in both units; those metric values are used as printed. The seat and fuel arms appear only in inches in Figure 6.3 and are converted. Figure 6.3 also uses a baggage arm of 102.54 in (2604 mm) where Section 6.3 states 102.36 in (2.600 m) — the dual-unit figure is used, a difference of under 0.2 mm of CG.</div>
+      <div class="scroll"><table id="wbRef"></table></div>
+    </div>
+  </section>
+
   <!-- ===================== TAKE-OFF ===================== -->
   <section id="to">
     <div class="card">
@@ -242,57 +347,34 @@ Arrival slope is entered as <b>positive downhill</b>, the direction that lengthe
     </div>
   </section>
 
-  <!-- ===================== WEIGHT & BALANCE ===================== -->
-  <section id="wb" hidden>
-    <div class="card">
-      <h2>Loading — all masses in kg</h2>
-      <div class="grid">
-        <div><label>Empty mass (kg)</label><input id="wbEW" type="number" inputmode="decimal" value="846.5"></div>
-        <div><label>Empty arm (mm)</label><input id="wbEA" type="number" inputmode="decimal" step="0.1" value="961.6"></div>
-        <div><label>Pilot (kg)</label><input id="wbP" type="number" inputmode="decimal" value="80"></div>
-        <div><label>Front pax (kg)</label><input id="wbFP" type="number" inputmode="decimal" value="0"></div>
-        <div><label>Rear pax (kg)</label><input id="wbR" type="number" inputmode="decimal" value="0"></div>
-        <div><label>Baggage (kg)</label><input id="wbB" type="number" inputmode="decimal" value="0"></div>
-        <div><label>Fuel (L)</label><input id="wbF" type="number" inputmode="decimal" value="200"></div>
-        <div><label>Trip fuel (L)</label><input id="wbTF" type="number" inputmode="decimal" value="0"></div>
-      </div>
-      <div style="margin-top:10px">
-        <label class="chk"><input type="checkbox" id="wbBackoff">Front seats have the 2-in back-off option (0800.xxM) — arm 47.44 in</label>
-      </div>
-      <div class="note" style="margin-top:9px">Empty mass and arm <b>must</b> come from your aircraft's current
-      weighing form — the defaults are the POH's sample aeroplane (846.5 kg at 961.6 mm) and are almost
-      certainly not yours. If your weighing form gives the arm in inches, multiply by 25.4.</div>
-    </div>
-
-    <div class="card">
-      <h2>Result</h2>
-      <div class="out">
-        <div class="big hero"><div class="lbl">Take-off mass</div><div class="val" id="wbTOW">—</div></div>
-        <div class="big"><div class="lbl">CG at take-off</div><div class="val" id="wbCG">—</div></div>
-        <div class="big"><div class="lbl">CG limits at that mass</div><div class="val" id="wbLim">—</div></div>
-      </div>
-      <div id="wbFlags"></div>
-      <div class="scroll" style="margin-top:12px"><table id="wbTable"></table></div>
-    </div>
-
-    <div class="card">
-      <h2>Envelope</h2>
-      <div id="wbChart"></div>
-      <div class="note" style="margin-top:8px">Datum is the <b>front face of the firewall</b>. Forward limit varies
-      in a straight line between 913 mm at 1000 kg, 949 mm at 1250 kg and 1071 mm at 1400 kg; aft limit is
-      1205 mm at all masses (landing gear extended). These are the POH's own metric figures, which are
-      rounded independently of the inch values rather than converted from them.
-      ● take-off, ○ after trip fuel.</div>
-    </div>
-
-    <div class="card"><h2>Arms and limits used</h2>
-      <div class="note" style="margin-bottom:10px">The POH states the CG limits and the baggage station in both units; those metric values are used as printed. The seat and fuel arms appear only in inches in Figure 6.3 and are converted. Figure 6.3 also uses a baggage arm of 102.54 in (2604 mm) where Section 6.3 states 102.36 in (2.600 m) — the dual-unit figure is used, a difference of under 0.2 mm of CG.</div>
-      <div class="scroll"><table id="wbRef"></table></div>
-    </div>
-  </section>
-
   <!-- ===================== REFERENCE ===================== -->
   <section id="ref" hidden>
+    <div class="card"><h2>Airspeed limitations — POH 2.4, Fig 2.1</h2>
+      <div class="scroll"><table id="vTable"></table></div>
+      <div class="note" style="margin-top:9px"><b>V<sub>A</sub> 129 KIAS is at maximum mass.</b> Manoeuvring
+      speed falls with mass — roughly in proportion to the square root of the mass ratio — so at a lighter
+      mass the true figure is lower than the placarded one. The table below computes it for the mass in the
+      Departure panel.</div>
+      <div class="out" style="margin-top:11px">
+        <div class="big"><div class="lbl">V<sub>A</sub> at current mass</div><div class="val" id="vaNow">—</div></div>
+        <div class="big"><div class="lbl">Best glide · clean</div><div class="val" id="glideV">—</div></div>
+      </div>
+    </div>
+    <div class="card"><h2>ASI markings — POH 2.5, Fig 2.2</h2>
+      <div class="scroll"><table id="asiTable"></table></div>
+    </div>
+    <div class="card"><h2>Glide without engine — POH 3.24, Fig 3.4</h2>
+      <div class="scroll"><table id="glideTable"></table></div>
+      <div class="grid" style="margin-top:11px">
+        <div><label>Height above terrain (ft)</label><input id="glAlt" type="number" inputmode="numeric" value="5000"></div>
+      </div>
+      <div class="out" style="margin-top:11px">
+        <div class="big"><div class="lbl">Glide range · clean</div><div class="val" id="glClean">—</div></div>
+        <div class="big"><div class="lbl">Glide range · flaps landing</div><div class="val" id="glDirty">—</div></div>
+      </div>
+      <div class="note" style="margin-top:9px">Zero wind, propeller windmilling, at maximum mass. A headwind
+      cuts this sharply; the POH figures carry no wind allowance.</div>
+    </div>
     <div class="card"><h2>Stall speeds — KIAS, 1400 kg, power off</h2>
       <div class="scroll"><table>
         <tr><th>Configuration</th><th>0°</th><th>30°</th><th>45°</th></tr>

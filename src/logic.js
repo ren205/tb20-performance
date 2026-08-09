@@ -249,6 +249,12 @@ function renderConditions(c, ids, flagsId, isArr){
     f += flag("warn","Variation is zero",
       `The wind is set to true but no magnetic variation is entered, so it is being resolved ` +
       `directly against a magnetic QFU. Enter the local variation.`);
+  if (c.qnh && (c.qnh < 940 || c.qnh > 1060)) f += flag("warn","QNH looks implausible",
+      `${fmt(c.qnh)} hPa is outside 940–1060. Check the setting — a wrong QNH moves the pressure ` +
+      `altitude by about 27 ft per hPa.`);
+  if (Math.abs(c.dev) > 35) f += flag("warn","Temperature far from ISA",
+      `ISA${c.dev > 0 ? "+" : ""}${fmt(c.dev,0)} °C. Check the OAT and elevation — this is well outside ` +
+      `the tabulated range and the figures are extrapolated.`);
   if (c.xw > XW_DEMO) f += flag("bad","Crosswind above demonstrated",
       `${fmt(c.xw,1)} kt vs 25 kt demonstrated.`);
   else if (c.xw > XW_DEMO*0.8) f += flag("warn","Crosswind approaching demonstrated limit",
@@ -411,6 +417,18 @@ function renderWB(){
   if (tripKg) h += `<tr><td>After ${fmt(num("wbTF"))} L trip fuel</td><td>${fmt(ldw,1)}</td><td>${fmt(ldCg,0)}</td><td>${fmt(ldMom)}</td></tr>`;
   $("wbTable").innerHTML = h;
 
+  /* The empty mass and arm decide every number on this tab, and a wrong one
+     produces a plausible answer with no symptom — so the sample figures are
+     called out until they are replaced and explicitly confirmed. */
+  const onSample = Math.abs(num("wbEW") - 846.5) < 0.05 && Math.abs(num("wbEA") - 961.6) < 0.05;
+  $("wbOwnFlag").innerHTML =
+    onSample ? flag("bad","These are the POH's sample aircraft figures",
+        "846.5 kg at 961.6 mm belongs to the manual's example aeroplane, not yours. " +
+        "Every mass and CG below is wrong until you enter your own weighing-form figures.")
+    : !$("wbConfirm").checked ? flag("warn","Empty mass and arm not confirmed",
+        "Tick the box above once you have checked these against your aircraft's current weighing form.")
+    : "";
+
   let f = "";
   if (tow > WB.maxKg.tow) f += flag("bad","Over max take-off mass",
       `${fmt(tow,1)} kg exceeds ${WB.maxKg.tow} kg by ${fmt(tow-WB.maxKg.tow,1)} kg.`);
@@ -435,6 +453,7 @@ function renderWB(){
   $("wbFlags").innerHTML = f;
 
   drawEnvelope(tow, cg, tripKg ? ldw : null, ldCg);
+  WB_TOW = tow; WB_LDW = ldw;
 
   $("wbRef").innerHTML = `<tr><th>Station</th><th>Arm mm</th><th>Arm in</th><th>Source</th><th>Limit</th></tr>` +
     [["Front seats (standard)", WB.arms.front, "—"],
@@ -769,8 +788,145 @@ async function fetchForecast(which){
   }
 }
 
+
+/* ==================================================================
+ * Reference data — POH Section 2 (limitations) and 3.24 (glide)
+ * ================================================================== */
+const VSPEEDS = [
+  ["V<sub>NE</sub>",  "Never exceed",              189, 187, "Do not exceed in any operation"],
+  ["V<sub>NO</sub>",  "Maximum structural cruise", 151, 150, "Only in smooth air, and then with care"],
+  ["V<sub>A</sub>",   "Manoeuvring",               130, 129, "No abrupt or full control movement above"],
+  ["V<sub>FE</sub>",  "Flaps extended — take-off", 130, 129, "Flap position dependent"],
+  ["V<sub>FE</sub>",  "Flaps extended — landing",  102, 103, "Flap position dependent"],
+  ["V<sub>LO</sub>",  "Gear operating",            130, 129, "Do not extend or retract above"],
+  ["V<sub>LE</sub>",  "Gear extended",             140, 139, "Do not exceed with gear down"]
+];
+const ASI_MARKS = [
+  ["White arc",  "59 – 103",  "Full flap operating range. Lower limit is V<sub>SO</sub> at maximum mass."],
+  ["Green arc",  "70 – 150",  "Normal operating range. Lower limit is V<sub>S1</sub>, flaps retracted."],
+  ["Yellow arc", "150 – 187", "Caution — smooth air only."],
+  ["Red line",   "187",       "Maximum speed for all operations."]
+];
+/* POH 3.24: maximum aerodynamic efficiency 8 clean, 5 with landing flaps. */
+const GLIDE = { clean:{ ld:8, kias:92 }, dirty:{ ld:5, kias:70 } };
+const glideNM = (ft, g) => ft * g.ld / 6076.12;
+/* Va scales with the square root of the mass ratio. */
+const vaAt = kg => 129 * Math.sqrt(clamp(kg, 700, MTOW_KG) / MTOW_KG);
+
+/* ==================================================================
+ * Fuel planning
+ *
+ * Climb and cruise come from the POH tables. Descent does not exist in the
+ * POH, so its rate and flow are the pilot's assumptions and are labelled as
+ * such; the descent leg is credited with ground distance at cruise TAS.
+ * Final reserve is priced at the POH holding flow (45% BHP, 8.5 US gal/h).
+ * ================================================================== */
+const HOLD_LH = 8.5 * 3.785;          // POH 5.29 holding consumption, litres/hour
+const GAL_L   = 3.785;
+
+function fuelBands(){                  // populate the %BHP and RPM selects
+  const mix = $("fuMix").value, pa = num("fuAlt");
+  const { rows } = cruiseAt(mix, pa);
+  const bsel = $("fuBhp"), rsel = $("fuRpm");
+  const wantB = bsel.value, wantR = rsel.value;
+  bsel.innerHTML = rows.map(b => `<option value="${b.bhp}">${b.bhp}%</option>`).join("");
+  if (rows.some(b => String(b.bhp) === wantB)) bsel.value = wantB;
+  const band = rows.find(b => String(b.bhp) === bsel.value) || rows[0];
+  rsel.innerHTML = band ? band.rows.map(r => `<option value="${r.rpm}">${r.rpm}</option>`).join("") : "";
+  if (band && band.rows.some(r => String(r.rpm) === wantR)) rsel.value = wantR;
+  return band ? { band, row: band.rows.find(r => String(r.rpm) === rsel.value) || band.rows[0] } : null;
+}
+
+function renderFuel(){
+  const dep = conditions(DEP), arr = conditions(ARR);
+  const pick = fuelBands();
+  const info = $("fuFrom");
+  if (!pick){
+    info.innerHTML = flag("bad","No cruise data at that altitude","The POH cruise tables cover 500–12 500 ft.");
+    $("fuTable").innerHTML = ""; $("fuTotal").textContent = "—"; return;
+  }
+  const { band, row } = pick;
+  const tas = band.tas, ffL = row.ff * GAL_L;
+  const mass = num("fuMass"), cruiseAlt = num("fuAlt");
+  const trip = num("fuTrip"), altn = num("fuAltn");
+
+  info.innerHTML = `<div class="adinfo">Climb from <b>${dep.icao || "departure"}</b> at
+    ${fmt(dep.elev)} ft, ISA${dep.dev >= 0 ? "+" : ""}${fmt(dep.dev,0)} °C · descent to
+    <b>${arr.icao || "arrival"}</b> at ${fmt(arr.elev)} ft · cruise
+    ${band.bhp}% / ${row.rpm} RPM, MP ${row.mp.toFixed(1)} in.Hg, TAS ${Math.round(tas)} kt,
+    ${ffL.toFixed(1)} L/h.</div>`;
+
+  // climb, from the POH cumulative-from-sea-level table
+  const at = (k,f) => Math.max(0, lookup3(CLIMB, mass, k, dep.dev, PA_CL, f));
+  const clT = Math.max(0, at(cruiseAlt,o=>o.t) - at(dep.elev,o=>o.t));         // minutes
+  const clF = Math.max(0, at(cruiseAlt,o=>o.f) - at(dep.elev,o=>o.f)) * GAL_L; // litres
+  const clD = Math.max(0, at(cruiseAlt,o=>o.d) - at(dep.elev,o=>o.d));         // NM
+
+  // descent — assumption, not POH
+  const dRate = Math.max(1, num("fuDrate")), dFlow = num("fuDflow");
+  const deT = Math.max(0, (cruiseAlt - arr.elev)) / dRate;      // minutes
+  const deD = deT / 60 * tas;                                    // NM at cruise TAS
+  const deF = deT / 60 * dFlow;
+
+  const crD = Math.max(0, trip - clD - deD);
+  const crT = crD / tas * 60;
+  const crF = crT / 60 * ffL;
+
+  const tripF = clF + crF + deF;
+  const contF = tripF * num("fuCont") / 100;
+  const altF  = altn > 0 ? (altn / tas * 60) / 60 * ffL : 0;
+  const resF  = num("fuRes") / 60 * HOLD_LH;
+  const taxi  = num("fuTaxi");
+  const total = taxi + tripF + contF + altF + resF;
+  const usable = num("fuUsable");
+
+  const L = v => fmt(v,1) + " L";
+  // durations here are in minutes; show them as h:mm
+  const T = m => `${Math.floor(m/60)}:${String(Math.round(m%60)).padStart(2,"0")}`;
+  $("fuTotal").innerHTML = fmt(total,1) + ` <small>L / ${fmt(total/GAL_L,1)} US gal</small>`;
+  $("fuLeft").innerHTML  = fmt(usable-total,1) + ` <small>L</small>`;
+  $("fuTime").innerHTML  = T(clT+crT+deT) + ` <small>h:mm</small>`;
+
+  $("fuTable").innerHTML =
+    `<tr><th>Phase</th><th>Distance NM</th><th>Time</th><th>Fuel L</th><th>Source</th></tr>` +
+    `<tr><td>Taxi &amp; start</td><td>—</td><td>—</td><td>${fmt(taxi,1)}</td><td><span class="src">your allowance</span></td></tr>` +
+    `<tr><td>Climb to ${fmt(cruiseAlt)} ft</td><td>${fmt(clD,1)}</td><td>${T(clT)}</td><td>${fmt(clF,1)}</td><td><span class="src">POH 5.12–5.13</span></td></tr>` +
+    `<tr><td>Cruise</td><td>${fmt(crD,1)}</td><td>${T(crT)}</td><td>${fmt(crF,1)}</td><td><span class="src">POH 5.16–5.29</span></td></tr>` +
+    `<tr><td>Descent to ${fmt(arr.elev)} ft</td><td>${fmt(deD,1)}</td><td>${T(deT)}</td><td>${fmt(deF,1)}</td><td><span class="src">your assumption</span></td></tr>` +
+    `<tr class="rec"><td><b>Trip</b></td><td><b>${fmt(clD+crD+deD,1)}</b></td><td><b>${T(clT+crT+deT)}</b></td><td><b>${fmt(tripF,1)}</b></td><td></td></tr>` +
+    `<tr><td>Contingency ${fmt(num("fuCont"))}%</td><td>—</td><td>—</td><td>${fmt(contF,1)}</td><td><span class="src">of trip fuel</span></td></tr>` +
+    (altn > 0 ? `<tr><td>Alternate ${fmt(altn)} NM</td><td>${fmt(altn,1)}</td><td>${T(altn/tas*60)}</td><td>${fmt(altF,1)}</td><td><span class="src">same cruise setting</span></td></tr>` : "") +
+    `<tr><td>Final reserve ${fmt(num("fuRes"))} min</td><td>—</td><td>${T(num("fuRes"))}</td><td>${fmt(resF,1)}</td><td><span class="src">POH holding, 32 L/h</span></td></tr>` +
+    `<tr class="rec"><td><b>Total required</b></td><td></td><td></td><td><b>${fmt(total,1)}</b></td><td></td></tr>`;
+
+  let f = "";
+  if (!trip) f += flag("info","No trip distance yet","Enter the trip distance to price the cruise leg.");
+  if (total > usable) f += flag("bad","Exceeds usable fuel",
+      `Needs ${L(total)} but only ${L(usable)} is usable — short by ${L(total-usable)}. ` +
+      `Shorten the leg, add a stop, or reduce power.`);
+  else if (trip && total > usable*0.9) f += flag("warn","Little fuel margin",
+      `Needs ${L(total)} of ${L(usable)} usable — ${L(usable-total)} spare.`);
+  else if (trip) f += flag("ok","Within usable fuel", `${L(usable-total)} spare after all allowances.`);
+  if (trip && clD + deD > trip) f += flag("warn","Trip shorter than climb and descent",
+      `Climb and descent alone cover ${fmt(clD+deD,1)} NM. The cruise leg is zero and the figures ` +
+      `above do not represent a real profile.`);
+  if (cruiseAlt <= dep.elev) f += flag("warn","Cruise altitude is not above the departure field","");
+  $("fuFlags").innerHTML = f;
+  FUEL_TOTAL = total;
+}
+let FUEL_TOTAL = 0, WB_TOW = 0, WB_LDW = 0;
+
 /* ---------------------------- shell ---------------------------- */
 function renderRef(){
+  $("vTable").innerHTML = `<tr><th>Speed</th><th></th><th>KCAS</th><th>KIAS</th><th>Remarks</th></tr>` +
+    VSPEEDS.map(v => `<tr><td>${v[0]}</td><td>${v[1]}</td><td>${v[2]}</td><td>${v[3]}</td>` +
+                     `<td><span class="src">${v[4]}</span></td></tr>`).join("");
+  $("asiTable").innerHTML = `<tr><th>Marking</th><th>KIAS</th><th>Significance</th></tr>` +
+    ASI_MARKS.map(m => `<tr><td>${m[0]}</td><td>${m[1]}</td><td><span class="src">${m[2]}</span></td></tr>`).join("");
+  $("glideTable").innerHTML =
+    `<tr><th>Configuration</th><th>Speed KIAS</th><th>Glide ratio</th><th>Per 1000 ft</th></tr>` +
+    `<tr><td>Gear up, flaps up</td><td>${GLIDE.clean.kias}</td><td>${GLIDE.clean.ld} : 1</td><td>${glideNM(1000,GLIDE.clean).toFixed(2)} NM</td></tr>` +
+    `<tr><td>Gear up, flaps landing</td><td>${GLIDE.dirty.kias}</td><td>${GLIDE.dirty.ld} : 1</td><td>${glideNM(1000,GLIDE.dirty).toFixed(2)} NM</td></tr>`;
   let h = `<tr><th>Config</th><th>KIAS</th><th>KCAS</th></tr>`;
   for (const [k,rows] of Object.entries(CAL))
     rows.forEach((r,i)=> h += `<tr><td>${i===0?k:""}</td><td>${r[0]}</td><td>${r[1]}</td></tr>`);
@@ -804,6 +960,14 @@ function renderRef(){
     `This app therefore requires all three, and shows each test separately so you can judge for yourself.`;
 }
 
+function renderRefLive(dep){
+  $("vaNow").innerHTML   = fmt(vaAt(dep.wRaw),0) + ` <small>KIAS at ${fmt(dep.wRaw)} kg</small>`;
+  $("glideV").innerHTML  = GLIDE.clean.kias + ` <small>KIAS · ${GLIDE.clean.ld}:1</small>`;
+  const a = num("glAlt");
+  $("glClean").innerHTML = fmt(glideNM(a, GLIDE.clean),1) + ` <small>NM from ${fmt(a)} ft</small>`;
+  $("glDirty").innerHTML = fmt(glideNM(a, GLIDE.dirty),1) + ` <small>NM from ${fmt(a)} ft</small>`;
+}
+
 function renderAll(){
   const dep = conditions(DEP), arr = conditions(ARR);
   const B = BASES[basis];
@@ -811,6 +975,7 @@ function renderAll(){
   renderConditions(dep, DEP_IDS, "condFlags", false);
   renderConditions(arr, ARR_IDS, "aCondFlags", true);
   renderTakeoff(dep); renderLanding(arr); renderClimb(dep); renderCruise(); renderWB();
+  renderFuel(); renderRefLive(dep);
   // aerodrome identifiers on the result headings
   $("toHead").textContent = dep.icao ? `Take-off distance — ${dep.icao}` : "Take-off distance";
   $("ldHead").textContent = arr.icao ? `Landing distance — ${arr.icao}` : "Landing distance";
@@ -819,6 +984,8 @@ function renderAll(){
 const FIELDS = ["depIcao","elev","qnh","oat","wt","rwy","wdir","wspd","wref","varn","slope","surf","tora","toda","asda",
                 "arrIcao","aElev","aQnh","aOat","aWt","aRwy","aWdir","aWspd","aWref","aVarn","aSlope","aSurf","lda",
                 "depMetar","arrMetar","depRwy","arrRwy","depTime","arrTime",
+                "fuTrip","fuAlt","fuAltn","fuMass","fuMix","fuBhp","fuRpm","fuTaxi","fuCont",
+                "fuRes","fuDrate","fuDflow","fuUsable","glAlt",
                 "cFrom","cTo","crzAlt","crzFuel","crzDist","crzRes",
                 "wbEW","wbEA","wbP","wbFP","wbR","wbB","wbF","wbTF"];
 try {
@@ -832,11 +999,13 @@ try {
   if (s._mix) mix = s._mix;
   if (s._basis) basis = s._basis;
   if (s._backoff) $("wbBackoff").checked = s._backoff;
+  if (s._wbConfirm) $("wbConfirm").checked = s._wbConfirm;
 } catch(e){ /* first run, or storage unavailable */ }
 
 function save(){
   try {
-    const o = { _mix:mix, _basis:basis, _backoff:$("wbBackoff").checked };
+    const o = { _mix:mix, _basis:basis, _backoff:$("wbBackoff").checked,
+                _wbConfirm:$("wbConfirm").checked };
     for (const k of FIELDS) if ($(k)) o[k] = $(k).value;
     localStorage.setItem("tb20.v3", JSON.stringify(o));
   } catch(e){ /* private mode — not worth interrupting the pilot over */ }
@@ -853,6 +1022,27 @@ $("arrRwy").addEventListener("change", () => applyRunway("arr"));
 $("depFetch").addEventListener("click", () => fetchForecast("dep"));
 $("arrFetch").addEventListener("click", () => fetchForecast("arr"));
 $("wbBackoff").addEventListener("change", () => { renderAll(); save(); });
+$("wbConfirm").addEventListener("change", () => { renderAll(); save(); });
+
+// Hand results forward: fuel decides the load, the load decides the masses,
+// the masses drive take-off and landing. Retyping between them invites a typo.
+$("fuToWb").addEventListener("click", () => {
+  $("wbF").value = FUEL_TOTAL.toFixed(1);
+  document.querySelector('#tabs button[data-t=wb]').click();
+  renderAll(); save();
+});
+$("wbToDep").addEventListener("click", () => {
+  $("wt").value = Math.round(WB_TOW);
+  document.querySelector('#tabs button[data-t=to]').click();
+  renderAll(); save();
+});
+$("wbToArr").addEventListener("click", () => {
+  $("aWt").value = Math.round(WB_LDW || WB_TOW);
+  document.querySelector('#tabs button[data-t=ldg]').click();
+  renderAll(); save();
+});
+for (const id of ["fuMix","fuAlt","fuBhp"])
+  $(id).addEventListener("change", () => { fuelBands(); renderFuel(); save(); });
 
 $("tabs").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -897,8 +1087,29 @@ for (const x of $("regSeg").children) x.setAttribute("aria-pressed", x.dataset.r
 for (const x of $("mixSeg").children) x.setAttribute("aria-pressed", x.dataset.m === mix);
 
 syncDeclaredFields();
+fuelBands();
 renderRef();
 renderAll();
+
+/* Version stamp — so you can tell which build is on the iPad. */
+document.querySelector("header .warnbar").insertAdjacentHTML("afterend",
+  `<div class="ver">build __VERSION__ · <span id="swState">standalone</span></div>`);
+
+/* Register the service worker so offline is deterministic instead of relying
+   on the browser's cache heuristics. Only meaningful over https from a real
+   origin — a file:// copy simply carries on without it. */
+const secureOrigin = location.protocol === "https:" || location.hostname === "localhost";
+if ("serviceWorker" in navigator && secureOrigin){
+  navigator.serviceWorker.register("sw.js").then(reg => {
+    const mark = () => { const e = $("swState"); if (e) e.textContent = "offline ready"; };
+    if (navigator.serviceWorker.controller) mark();
+    reg.addEventListener("updatefound", () => {
+      const w = reg.installing;
+      w && w.addEventListener("statechange", () => { if (w.state === "activated") mark(); });
+    });
+    navigator.serviceWorker.ready.then(mark);
+  }).catch(() => { const e = $("swState"); if (e) e.textContent = "offline not cached"; });
+}
 // show age of any stored report without overwriting edited fields
 applyMetar("dep", false);
 applyMetar("arr", false);

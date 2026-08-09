@@ -11,6 +11,7 @@ set -e
 cd "$(dirname "$0")"
 
 OUT=TB20-Performance.html
+VERSION=$(date -u +%Y.%m.%d.%H%M)
 
 {
   cat src/head.html
@@ -34,7 +35,14 @@ else
   echo "node not found — skipping syntax check"
 fi
 
+sed -i '' "s/__VERSION__/$VERSION/g" "$OUT.tmp"
+# the service worker cache name must change whenever the page does, or an old
+# copy would be served forever
+sed -i '' "s/__VERSION__/$VERSION/g" sw.js
+sed -i '' "s/tb20-v[0-9.]*/tb20-v$VERSION/" sw.js
+grep -q "tb20-v$VERSION" sw.js || { echo "ERROR: sw.js cache name did not update"; exit 1; }
+
 mv "$OUT.tmp" "$OUT"
 # index.html is what GitHub Pages serves at the site root; identical content.
 cp "$OUT" index.html
-echo "Built $OUT and index.html ($(wc -c < "$OUT" | tr -d ' ') bytes)"
+echo "Built $OUT and index.html  version $VERSION  ($(wc -c < "$OUT" | tr -d ' ') bytes)"

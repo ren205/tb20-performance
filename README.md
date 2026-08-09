@@ -72,6 +72,23 @@ tests with "or", but its predecessor EU-OPS 1.530 used "and", and an "or"
 reading would make route (2) less demanding than route (1). The app requires all
 three and shows each separately.
 
+## Fuel planning
+
+The first tab builds a full fuel plan: taxi, climb, cruise, descent,
+contingency, alternate and final reserve, with a breakdown table naming the
+source of every line.
+
+Climb comes from the POH climb tables and cruise from the POH level-flight
+tables. **Descent is not in the POH** — its rate and flow are your assumptions,
+labelled as such in the table, and the descent leg is credited with ground
+distance at cruise TAS. Final reserve is priced at the POH holding consumption
+(45% BHP, 8.5 US gal/h = 32 L/h).
+
+The result hands forward: *Use total fuel in weight & balance* → W&B computes
+take-off and landing mass → *Use take-off mass in Departure* / *Use landing mass
+in Arrival*. That chain exists so no mass is ever retyped between two safety
+calculations.
+
 ## Aerodrome pre-fill
 
 Type an ICAO into either panel and pick a runway end. It fills **field
@@ -156,6 +173,31 @@ shows its age but does **not** re-apply, so hand-edited values survive.
 The empty mass and arm default to the POH's **sample** aeroplane
 (846.5 kg at 961.6 mm). Replace them with the figures from your aircraft's
 current weighing form. If that form gives the arm in inches, multiply by 25.4.
+
+The tab refuses to be quiet about this: while the sample figures are still in
+place it shows a red banner, and once changed it shows an amber one until you
+tick the box confirming they are your aircraft's. A wrong empty mass produces a
+plausible answer with no other symptom, which is the one silent failure mode
+this tool could have.
+
+## Offline
+
+The page registers a service worker that precaches the whole app and serves it
+cache-first, so offline is deterministic rather than dependent on the browser's
+cache heuristics. The header shows **offline ready** once the cache is in place,
+next to the build version.
+
+Verified by killing the web server and reloading: the page and all 1433
+aerodromes load from cache with every tab working.
+
+The service worker only applies to the hosted copy over https (or localhost).
+A `TB20-Performance.html` opened straight off disk simply runs without it.
+
+## Printing
+
+The Reference and result tabs print reasonably — `@media print` drops the
+navigation, buttons and text boxes, switches to a light palette and expands
+every tab, so a single print gives one paper copy of the whole plan.
 
 ## Editing
 
