@@ -854,11 +854,16 @@ function renderFuel(){
   const mass = num("fuMass"), cruiseAlt = num("fuAlt");
   const trip = num("fuTrip"), altn = num("fuAltn");
 
-  info.innerHTML = `<div class="adinfo">Climb from <b>${dep.icao || "departure"}</b> at
-    ${fmt(dep.elev)} ft, ISA${dep.dev >= 0 ? "+" : ""}${fmt(dep.dev,0)} °C · descent to
-    <b>${arr.icao || "arrival"}</b> at ${fmt(arr.elev)} ft · cruise
-    ${band.bhp}% / ${row.rpm} RPM, MP ${row.mp.toFixed(1)} in.Hg, TAS ${Math.round(tas)} kt,
-    ${ffL.toFixed(1)} L/h.</div>`;
+  /* Climb and descent depend on the two aerodromes, which are entered on the
+     Take-off and Landing tabs — say so, since those panels are not shown here. */
+  info.innerHTML = `<div class="adinfo">
+    <b>Climb</b> from ${dep.icao || "departure"} at ${fmt(dep.elev)} ft,
+    ISA${dep.dev >= 0 ? "+" : ""}${fmt(dep.dev,0)} °C ·
+    <b>descent</b> to ${arr.icao || "arrival"} at ${fmt(arr.elev)} ft ·
+    <b>cruise</b> ${band.bhp}% / ${row.rpm} RPM, MP ${row.mp.toFixed(1)} in.Hg,
+    TAS ${Math.round(tas)} kt, ${ffL.toFixed(1)} L/h.<br>
+    <span class="src">Aerodromes and temperatures come from the Take-off and Landing tabs.</span>
+    </div>`;
 
   // climb, from the POH cumulative-from-sea-level table
   const at = (k,f) => Math.max(0, lookup3(CLIMB, mass, k, dep.dev, PA_CL, f));
@@ -1056,16 +1061,24 @@ $("resSeg").addEventListener("click", e => {
 for (const id of ["fuMix","fuAlt","fuBhp","fuRpm"])
   $(id).addEventListener("change", () => { fuelBands(); renderFuel(); save(); });
 
+/* Which shared panels belong to a tab. Fuel, W&B and Reference stand alone —
+   the aerodrome panels and the factoring basis have nothing to do with them. */
+function syncTabChrome(tab){
+  for (const s of document.querySelectorAll("main > section")) s.hidden = s.id !== tab;
+  $("condDep").hidden = !(tab === "to" || tab === "clb");   // departure drives take-off and climb
+  $("condArr").hidden = tab !== "ldg";                       // arrival drives landing only
+  $("regCard").hidden = !(tab === "to" || tab === "ldg");    // factoring applies to distances only
+}
+
 $("tabs").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   for (const x of $("tabs").children) x.setAttribute("aria-selected", x === b);
-  for (const s of document.querySelectorAll("main > section")) s.hidden = s.id !== b.dataset.t;
-  const tab = b.dataset.t, perf = tab === "to" || tab === "ldg";
-  $("condDep").hidden = !(tab === "to" || tab === "clb");
-  $("condArr").hidden = tab !== "ldg";
-  $("regCard").hidden = !perf;          // factoring only applies to take-off and landing
+  syncTabChrome(b.dataset.t);
 });
-$("regCard").hidden = false;
+
+// Run it for whichever tab starts selected, rather than waiting for a click.
+syncTabChrome((document.querySelector('#tabs button[aria-selected="true"]')
+               || $("tabs").firstElementChild).dataset.t);
 
 // Same-day, same-region flights usually share weather; the runway, mass and
 // declared distances stay per-aerodrome and are deliberately not copied.
