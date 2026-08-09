@@ -1386,7 +1386,12 @@ try {
     el.value = s[k];
   }
   if (s._mix) mix = s._mix;
-  if (s._basis) basis = s._basis;
+  /* One-time migration. A saved basis normally wins, but changing the default
+     would otherwise never reach anyone who has already used the app — leaving
+     them in Unfactored, or in a basis they only tried once, without having
+     chosen it. Force Part-NCO once, then respect the choice from then on. */
+  if (s._basisMigrated) { if (s._basis) basis = s._basis; }
+  else { basis = "nco"; }
   if (s._backoff) $("wbBackoff").checked = s._backoff;
   if (s._wbConfirm) $("wbConfirm").checked = s._wbConfirm;
   if (s._res) resMin = +s._res;
@@ -1395,7 +1400,7 @@ try {
 function save(){
   try {
     const o = { _mix:mix, _basis:basis, _backoff:$("wbBackoff").checked,
-                _wbConfirm:$("wbConfirm").checked, _res:resMin };
+                _wbConfirm:$("wbConfirm").checked, _res:resMin, _basisMigrated:true };
     for (const k of FIELDS) if ($(k)) o[k] = $(k).value;
     localStorage.setItem("tb20.v3", JSON.stringify(o));
   } catch(e){ /* private mode — not worth interrupting the pilot over */ }
@@ -1510,6 +1515,7 @@ syncRoute(false);   // restore the route without overwriting edited distances
 fuelBands();
 renderRef();
 renderAll();
+save();   // persist the one-time basis migration
 
 /* Version stamp — so you can tell which build is on the iPad. */
 document.querySelector("header .warnbar").insertAdjacentHTML("afterend",
