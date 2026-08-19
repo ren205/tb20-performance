@@ -1703,7 +1703,7 @@ function renderFuel(){
 }
 let FUEL_TOTAL = 0, WB_TOW = 0, WB_LDW = 0, WB_CG = 0, WB_LDCG = 0;
 let TO_ROLL = 0, TO_50 = 0, TO_VLO = 0, TO_V50 = 0, LD_ROLL = 0, LD_50 = 0, LD_V50 = 0;
-const BUILD = "2026.08.09.1407";
+const BUILD = "2026.08.19.1157";
 
 
 /* ==================================================================
@@ -2256,7 +2256,7 @@ save();   // persist the one-time basis migration
 
 /* Version stamp — so you can tell which build is on the iPad. */
 document.querySelector("header .warnbar").insertAdjacentHTML("afterend",
-  `<div class="ver">build 2026.08.09.1407 · <span id="swState">standalone</span></div>`);
+  `<div class="ver">build 2026.08.19.1157 · <span id="swState">standalone</span></div>`);
 
 /* Register the service worker so offline is deterministic instead of relying
    on the browser's cache heuristics. Only meaningful over https from a real

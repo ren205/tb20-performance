@@ -1,0 +1,41 @@
+CLIMB MODEL — gear up, flaps up, 2575 RPM full throttle, full rich, ISA, 1400 kg
+altitude_ft,climb_IAS_kt,rate_of_climb_fpm
+500,95,1100
+2500,95,972
+4500,95,844
+6500,95,716
+8500,95,588
+10500,95,460
+12500,95,332
+climb fuel flow low  (500-4500 ft)   : 20.3 US gal/h
+climb fuel flow high (8500-12500 ft) : 14.2 US gal/h
+
+CRUISE MODEL — Fast — 75% best power
+altitude_ft,TAS_kt,fuel_flow_gph,RPM,MP_inHg,note
+500,151,15.9,2400,24.3,
+2500,154,15.9,2400,23.8,
+4500,157,16,2400,23.2,
+6500,160,16.2,2500,22.1,only 2500 RPM tabulated here
+8500,,,,,75% not available at this altitude
+10500,,,,,75% not available at this altitude
+12500,,,,,75% not available at this altitude
+
+CRUISE MODEL — Normal — 65% best economy
+altitude_ft,TAS_kt,fuel_flow_gph,RPM,MP_inHg,note
+500,140,12.2,2300,22.6,
+2500,143,12.2,2300,22.1,
+4500,145,12.2,2300,21.6,
+6500,148,12.2,2300,21.1,
+8500,150,12.1,2300,20.7,
+10500,153,12.6,2500,19,only 2500 RPM tabulated here
+12500,,,,,65% not available at this altitude
+
+CRUISE MODEL — Long range — 55% best economy
+altitude_ft,TAS_kt,fuel_flow_gph,RPM,MP_inHg,note
+500,130,10.6,2200,20.8,
+2500,133,10.6,2200,20.3,
+4500,135,10.6,2200,19.9,
+6500,136,10.6,2200,19.4,
+8500,138,10.6,2200,19,
+10500,140,10.6,2200,18.6,
+12500,141,11.4,2500,16.5,only 2500 RPM tabulated here
