@@ -1,11 +1,15 @@
-# TB20 Performance & Loading
+# TB20 Performance
 
 **Live:** https://ren205.github.io/tb20-performance/
 
 
-A single self-contained HTML page that computes take-off, landing, climb, cruise
-and weight & balance for the SOCATA TB20, from the tables in the aircraft's
+A single self-contained HTML page that computes **take-off, climb, cruise and
+landing performance** for the SOCATA TB20, from the tables in the aircraft's
 Pilot's Information Manual.
+
+Fuel planning and weight & balance are deliberately **not** here — those live in
+SkyDemon and ForeFlight. This does the one thing they cannot: POH runway
+performance with the regulatory factoring applied and shown.
 
 **`TB20-Performance.html` is the tool.** Open it in any browser. It makes no
 network requests of any kind — no fonts, no scripts, no analytics — so it works
@@ -35,16 +39,15 @@ against the paper manual before flying them.**
 
 | Tab | Source |
 |---|---|
-| Fuel | POH climb and cruise tables, reserve per NCO.OP.125 |
-| W & B | POH 2.9 (limits) and Fig 6.3 (arms) |
 | Take-off | POH 5.8–5.9 (Fig 5.6 / 5.7) |
 | Climb | POH 5.10–5.13 (Fig 5.8–5.11) |
 | Cruise | POH 5.16–5.29 (Fig 5.13–5.26), both mixtures, 7 altitudes |
 | Landing | POH 5.30–5.31 (Fig 5.27 / 5.28) |
+| Summary | One page of the above, to copy, email or print |
 | Reference | V-speeds, ASI markings, glide, stall speeds, calibration, holding |
 
-Tabs run in the order of a flight: fuel, loading, take-off, climb, cruise,
-landing.
+Tabs run in the order of a flight. Departure and arrival are entered
+independently on the Take-off and Landing tabs — type any ICAO into either.
 
 Interpolation is linear on weight, pressure altitude and ISA deviation. Every
 tabulated corner reproduces the POH exactly. Beyond the tables, temperature and
@@ -80,42 +83,6 @@ tests with "or", but its predecessor EU-OPS 1.530 used "and", and an "or"
 reading would make route (2) less demanding than route (1). The app requires all
 three and shows each separately.
 
-## Route
-
-The Fuel tab opens with the route — departure, destination and alternate ICAO.
-That is the single place identifiers are entered; the Take-off and Landing
-panels take theirs from it and show them read-only, so the two can never
-disagree.
-
-Entering a route computes the **great-circle distance and initial true track**
-for each leg from the bundled coordinates, and writes the distances into the
-trip and alternate fields. Those remain editable — the direct figure stays on
-screen, and an override is called out rather than hidden, since a real route is
-rarely the direct track.
-
-## Fuel planning
-
-The first tab builds a full fuel plan: taxi, climb, cruise, descent,
-contingency, alternate and final reserve, with a breakdown table naming the
-source of every line.
-
-Climb comes from the POH climb tables and cruise from the POH level-flight
-tables. **Descent is not in the POH** — its rate and flow are your assumptions,
-labelled as such in the table, and the descent leg is credited with ground
-distance at cruise TAS.
-
-Final reserve follows **NCO.OP.125**, selectable as 10 min (VFR day, local and
-in sight of the aerodrome), 30 min (VFR day to the aerodrome of intended
-landing) or 45 min (**VFR by night, or IFR**). The rule requires that time
-*"at normal cruising altitude"*, so the reserve is priced at the selected cruise
-consumption rather than at a holding flow — holding would under-read it by about
-a third.
-
-The result hands forward: *Use total fuel in weight & balance* → W&B computes
-take-off and landing mass → *Use take-off mass in Departure* / *Use landing mass
-in Arrival*. That chain exists so no mass is ever retyped between two safety
-calculations.
-
 ## Aerodrome pre-fill
 
 Type an ICAO into either panel and pick a runway end. It fills **field
@@ -137,24 +104,6 @@ The data is from [OurAirports](https://ourairports.com) (public domain) and is
 **crowd-sourced, not an official aeronautical source**. Treat it as a typing aid
 and verify it. To refresh or widen the coverage, regenerate `src/aerodromes.js`
 from that project's `airports.csv` and `runways.csv`.
-
-## Forecast for a planned time
-
-Set a planned time (UTC) and press **Fetch forecast**. It queries the free
-[Open-Meteo](https://open-meteo.com) hourly model for the aerodrome's
-coordinates and fills OAT, QNH and wind for that hour, setting the wind
-reference to True.
-
-This is the one part of the tool that needs a connection — it cannot work in
-flight, and it will not work from a file opened directly off disk. Results are
-cached, so a fetched forecast survives offline; on reload the cache is shown
-with its age but is **not** re-applied.
-
-It is **model output, not an observation**: no gusts, and temperature can be a
-couple of degrees out, which moves the take-off distance by a few percent. Use a
-METAR for the actual departure calculation whenever one exists. A TAF is not
-used, because TAFs give wind but carry neither QNH nor temperature, and many
-smaller aerodromes (LFSN among them) issue none at all.
 
 ## Weather entry
 
@@ -183,29 +132,13 @@ shows its age but does **not** re-apply, so hand-edited values survive.
 ## Units and conventions
 
 - Altitudes and elevations in **feet**; runway distances in **metres**;
-  masses in **kg**; CG and arms in **mm**.
+  masses in **kg**.
 - **QFU is magnetic.** METAR/TAF winds are true, ATIS/tower winds are magnetic,
   so each aerodrome carries a wind-reference selector and a magnetic variation
   field (east-positive). A true wind is converted before being resolved against
   the QFU.
 - Departure slope is entered **positive uphill**, arrival slope **positive
   downhill** — positive always means the penalising direction.
-- W&B uses the POH's own metric figures where it states them (CG limits, baggage
-  station), because the manual rounds them independently of the inch values
-  (it prints 0.913 m where 35.9 in is 911.9 mm). Seat and fuel arms exist only
-  in inches in Figure 6.3 and are converted; the arms table labels which is which.
-
-## Before you rely on the W&B tab
-
-The empty mass and arm default to the POH's **sample** aeroplane
-(846.5 kg at 961.6 mm). Replace them with the figures from your aircraft's
-current weighing form. If that form gives the arm in inches, multiply by 25.4.
-
-The tab refuses to be quiet about this: while the sample figures are still in
-place it shows a red banner, and once changed it shows an amber one until you
-tick the box confirming they are your aircraft's. A wrong empty mass produces a
-plausible answer with no other symptom, which is the one silent failure mode
-this tool could have.
 
 ## Offline and updates
 
@@ -235,7 +168,7 @@ every tab, so a single print gives one paper copy of the whole plan.
 ## Verification
 
     node test/verify-tables.js     # 1040 checks
-    node test/verify-logic.js      #   79 checks
+    node test/verify-logic.js      #   36 checks
 
 `test/verify_core.js` is the app's own data and pure functions with the DOM
 stripped out, so the tests exercise the shipping code rather than a copy.
@@ -256,16 +189,11 @@ What is checked:
 - **Conservative extrapolation** beyond the tables, and clamping below the
   lightest tabulated mass.
 - **Units, atmosphere and true airspeed**, including the pressure-level mapping.
-- **Wind triangle** against closed-form cases (pure head, tail and crosswind).
-- **Great-circle** distance and track, including reciprocals and one degree of
-  latitude being 60 NM.
-- **Sun times** against an independently computed reference.
-- **Weight and balance** against the POH's own worked example, Figure 6.3.
+- **Speeds and glide**, including V<sub>A</sub> scaling with mass.
 
-The correction factors and the fuel chain are verified in the browser, since
-they depend on the DOM: the regulatory multipliers, the CAT wind credit and
-route (2) tests, the POH wind and surface corrections, slope, and every line of
-the fuel plan summing to its total.
+The correction factors are verified in the browser, since they depend on the
+DOM: the regulatory multipliers, the CAT wind credit and route (2) tests, the
+POH wind and surface corrections, and slope.
 
 ## Editing
 
@@ -290,7 +218,7 @@ drift out of sync with `src/`.
 | `src/body.html` | Markup for all six tabs |
 | `src/data_block.js` | The POH tables, transcribed |
 | `src/helpers.js` | Interpolation, unit conversion, formatting |
-| `src/logic.js` | Factoring bases, W&B, rendering, persistence |
+| `src/logic.js` | Factoring bases, aerodrome lookup, rendering, persistence |
 
 ## Getting it onto the iPad offline
 

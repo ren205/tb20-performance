@@ -151,60 +151,6 @@ const fmt = (v,d=0) => Number.isFinite(v) ? v.toLocaleString("en-GB",{minimumFra
 const M_PER_FT = 0.3048, FT_PER_M = 1/M_PER_FT, LB_PER_KG = 2.2046226218;
 const toM = ft => ft*M_PER_FT;
 const dist = ft => `${fmt(toM(ft))} <small>m / ${fmt(ft)} ft</small>`;
-const deltaP  = paFt => Math.pow(1 - 6.87535e-6 * paFt, 5.25588);
-const plToAlt = hPa  => (1 - Math.pow(hPa / 1013.25, 1 / 5.25588)) / 6.87535e-6;
-function tasFrom(cas, paFt, oatC){
-  const sigma = deltaP(paFt) / ((oatC + 273.15) / 288.15);
-  return cas / Math.sqrt(sigma);
-}
-function windTriangle(tas, trackDeg, windFromDeg, windKt){
-  const rad = Math.PI / 180, d = (windFromDeg - trackDeg) * rad;
-  const head  = windKt * Math.cos(d);      // +ve slows you down
-  const cross = windKt * Math.sin(d);      // +ve from the right
-  const wca   = Math.asin(Math.max(-1, Math.min(1, cross / tas)));
-  const gs    = tas * Math.cos(wca) - head;
-  return { gs: Math.max(1, gs), head, cross, wcaDeg: wca / rad };
-}
-function sunEvent(lat, lon, dateUTC, zenith, rise){
-  const rad = Math.PI / 180;
-  const start = Date.UTC(dateUTC.getUTCFullYear(), 0, 0);
-  const D = Math.floor((Date.UTC(dateUTC.getUTCFullYear(), dateUTC.getUTCMonth(), dateUTC.getUTCDate()) - start) / 86400000);
-  const lngHour = lon / 15;
-  const t = D + ((rise ? 6 : 18) - lngHour) / 24;
-  const M = 0.9856 * t - 3.289;
-  let L = (M + 1.916 * Math.sin(M * rad) + 0.020 * Math.sin(2 * M * rad) + 282.634 + 360) % 360;
-  let RA = (Math.atan(0.91764 * Math.tan(L * rad)) / rad + 360) % 360;
-  RA += (Math.floor(L / 90) - Math.floor(RA / 90)) * 90;
-  RA /= 15;
-  const sinDec = 0.39782 * Math.sin(L * rad);
-  const cosDec = Math.cos(Math.asin(sinDec));
-  const cosH = (Math.cos(zenith * rad) - sinDec * Math.sin(lat * rad)) / (cosDec * Math.cos(lat * rad));
-  if (cosH > 1 || cosH < -1) return null;                      // sun never reaches that angle
-  let H = (rise ? 360 - Math.acos(cosH) / rad : Math.acos(cosH) / rad) / 15;
-  let UT = (H + RA - 0.06571 * t - 6.622 - lngHour) % 24;
-  return ((UT + 24) % 24) * 60;
-}
-function gcNM(a, b){
-  const R = 3440.065, rad = Math.PI / 180;
-  const p1 = a[2] * rad, p2 = b[2] * rad;
-  const dp = p2 - p1, dl = (b[3] - a[3]) * rad;
-  const h = Math.sin(dp/2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) ** 2;
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
-}
-function gcTrack(a, b){                      // initial great-circle track, degrees true
-  const rad = Math.PI / 180;
-  const p1 = a[2] * rad, p2 = b[2] * rad, dl = (b[3] - a[3]) * rad;
-  const y = Math.sin(dl) * Math.cos(p2);
-  const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
-  return (Math.atan2(y, x) / rad + 360) % 360;
-}
-function midpoint(a, b){
-  const rad = Math.PI/180, deg = 180/Math.PI;
-  const p1 = a[2]*rad, l1 = a[3]*rad, p2 = b[2]*rad, dl = (b[3]-a[3])*rad;
-  const bx = Math.cos(p2)*Math.cos(dl), by = Math.cos(p2)*Math.sin(dl);
-  const p3 = Math.atan2(Math.sin(p1)+Math.sin(p2), Math.sqrt((Math.cos(p1)+bx)**2 + by**2));
-  return [0,0, p3*deg, (l1 + Math.atan2(by, Math.cos(p1)+bx))*deg];
-}
 const qfuOf = ident => (parseInt(ident, 10) % 36 || 36) * 10;
 const vaAt = kg => 129 * Math.sqrt(clamp(kg, 700, MTOW_KG) / MTOW_KG);
 const glideNM = (ft, g) => ft * g.ld / 6076.12;
@@ -227,16 +173,12 @@ function cruiseAt(mixKey, pa){
   }
   return { rows: out, clamped: pa < alts[0] || pa > alts[alts.length-1] };
 }
-const fwdLimitAt = kg => interp(clamp(kg, WB.fwdLimit[0][0], WB.fwdLimit[2][0]),
-                                WB.fwdLimit.map(p=>p[0]), WB.fwdLimit.map(p=>p[1]));
-const PLEVELS = [1000,975,950,925,900,850,800,700,600,500];
-const nearestPL = paFt => PLEVELS.reduce((a,b)=>Math.abs(plToAlt(b)-paFt)<Math.abs(plToAlt(a)-paFt)?b:a);
-const SUN_Z = 90.8333, CIVIL_Z = 96;
-const WB = { fwdLimit:[[1000,913],[1250,949],[1400,1071]], aftLimit:1205,
-             arms:{ front:{mm:45.38*25.4}, frontBackoff:{mm:47.44*25.4}, rear:{mm:80*25.4},
-                    fuel:{mm:42.70*25.4}, baggage:{mm:2600} },
-             maxKg:{tow:1400,baggage:65,rearSeats:231}, fuel:{usableL:326,kgPerL:0.72} };
+function slopeUp(r, n){
+  const near = n === 0 ? r[4] : r[5], far = n === 0 ? r[5] : r[4];
+  if (near == null || far == null || !r[2]) return null;
+  const s = (far - near) / r[2] * 100;
+  return Math.abs(s) > 5 ? null : s;        // implausible, treat as unknown
+}
 module.exports = { PA_TO,PA_CL,DISA,TAKEOFF,LANDING,ROC,CLIMB,CRUISE,TO_V,LD_V,CLB_V,CAL,ANT,
   W_KEYS,W_KG,MTOW_KG,XW_DEMO,interp,lookup3,clamp,isaTemp,fmt,M_PER_FT,FT_PER_M,LB_PER_KG,toM,
-  deltaP,plToAlt,nearestPL,tasFrom,windTriangle,sunEvent,gcNM,gcTrack,midpoint,vaAt,glideNM,
-  cruiseAt,fwdLimitAt,SUN_Z,CIVIL_Z,WB };
+  qfuOf,vaAt,glideNM,cruiseAt,slopeUp };

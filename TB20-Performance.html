@@ -113,9 +113,7 @@ svg{width:100%;height:auto;display:block}
 </header>
 
 <nav id="tabs">
-  <button aria-selected="true" data-t="fuel">Fuel</button>
-  <button data-t="wb">W &amp; B</button>
-  <button data-t="to">Take-off</button>
+  <button aria-selected="true" data-t="to">Take-off</button>
   <button data-t="clb">Climb</button>
   <button data-t="crz">Cruise</button>
   <button data-t="ldg">Landing</button>
@@ -129,7 +127,7 @@ svg{width:100%;height:auto;display:block}
   <div class="card" id="condDep">
     <h2>Departure</h2>
     <div class="grid">
-      <div><label>Departure ICAO</label><input id="depIcao" type="text" readonly tabindex="-1" placeholder="set on Fuel tab" value=""></div>
+      <div><label>Departure ICAO</label><input id="depIcao" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFSN" value=""></div>
       <div><label>Runway</label><select id="depRwy" disabled><option value="">—</option></select></div>
       <div><label>Planned time (UTC)</label><input id="depTime" type="datetime-local"></div>
       <div><label>Field elev (ft)</label><input id="elev" type="number" inputmode="numeric" value="0"></div>
@@ -185,7 +183,7 @@ svg{width:100%;height:auto;display:block}
   <div class="card" id="condArr" hidden>
     <h2>Arrival</h2>
     <div class="grid">
-      <div><label>Arrival ICAO</label><input id="arrIcao" type="text" readonly tabindex="-1" placeholder="set on Fuel tab" value=""></div>
+      <div><label>Arrival ICAO</label><input id="arrIcao" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFST" value=""></div>
       <div><label>Runway</label><select id="arrRwy" disabled><option value="">—</option></select></div>
       <div><label>Planned time (UTC)</label><input id="arrTime" type="datetime-local"></div>
       <div><label>Field elev (ft)</label><input id="aElev" type="number" inputmode="numeric" value="0"></div>
@@ -250,135 +248,6 @@ svg{width:100%;height:auto;display:block}
     <div id="regNote"></div>
   </div>
 
-  <!-- ===================== FUEL ===================== -->
-  <section id="fuel">
-    <div class="card">
-      <h2>Route</h2>
-      <div class="grid">
-        <div><label>Departure ICAO</label><input id="rtDep" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFSN"></div>
-        <div><label>Destination ICAO</label><input id="rtDest" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="LFST"></div>
-        <div><label>Alternate ICAO</label><input id="rtAltn" type="text" inputmode="latin" autocapitalize="characters" maxlength="4" placeholder="optional"></div>
-      </div>
-      <div class="grid" style="margin-top:11px">
-        <div><label>Off-blocks (UTC)</label><input id="rtEtd" type="datetime-local"></div>
-      </div>
-      <div id="rtOut"></div>
-      <div id="sunOut"></div>
-    </div>
-
-    <div class="card">
-      <h2>Trip</h2>
-      <div class="grid">
-        <div><label>Trip distance (NM)</label><input id="fuTrip" type="number" inputmode="numeric" value="0"></div>
-        <div><label>Cruise PA (ft)</label><input id="fuAlt" type="number" inputmode="numeric" value="6500"></div>
-        <div><label>Alternate (NM)</label><input id="fuAltn" type="number" inputmode="numeric" value="0" placeholder="0 = none"></div>
-        <div><label>Mass in climb (kg)</label><input id="fuMass" type="number" inputmode="numeric" value="1320"></div>
-        <div><label>Mixture</label><select id="fuMix">
-          <option value="bestPower">Best power</option>
-          <option value="bestEconomy" selected>Best economy</option>
-        </select></div>
-        <div><label>% BHP</label><select id="fuBhp"></select></div>
-        <div><label>RPM</label><select id="fuRpm"></select></div>
-      </div>
-      <div id="fuFrom"></div>
-      <div class="metar">
-        <button type="button" id="fuWind" class="btn">Fetch winds aloft for the cruise level</button>
-        <div id="fuWindOut"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Allowances</h2>
-      <div class="grid">
-        <div><label>Taxi &amp; start (L)</label><input id="fuTaxi" type="number" inputmode="decimal" value="8"></div>
-        <div><label>Contingency (%)</label><input id="fuCont" type="number" inputmode="numeric" value="5"></div>
-        <div><label>Descent rate (ft/min)</label><input id="fuDrate" type="number" inputmode="numeric" value="500"></div>
-        <div><label>Descent flow (L/h)</label><input id="fuDflow" type="number" inputmode="decimal" value="40"></div>
-        <div><label>Usable fuel (L)</label><input id="fuUsable" type="number" inputmode="decimal" value="326"></div>
-      </div>
-      <div style="margin-top:11px">
-        <label>Final reserve — NCO.OP.125</label>
-        <div class="seg" id="resSeg">
-          <button aria-pressed="false" data-r="10">VFR local · 10 min</button>
-          <button aria-pressed="true"  data-r="30">VFR day · 30 min</button>
-          <button aria-pressed="false" data-r="45">VFR night / IFR · 45 min</button>
-        </div>
-      </div>
-      <div class="note" style="margin-top:10px">Climb and cruise come from the POH tables. <b>Descent is not in
-      the POH</b> — the rate and flow above are your assumptions, and the descent leg is credited with distance
-      at cruise TAS. Final reserve follows <b>NCO.OP.125</b> and is priced at the selected cruise consumption, because the rule requires that time <em>at normal cruising altitude</em>.</div>
-    </div>
-
-    <div class="card">
-      <h2>Fuel plan</h2>
-      <div class="out">
-        <div class="big hero"><div class="lbl">Total required</div><div class="val" id="fuTotal">—</div></div>
-        <div class="big"><div class="lbl">Remaining of usable</div><div class="val" id="fuLeft">—</div></div>
-        <div class="big"><div class="lbl">Trip time</div><div class="val" id="fuTime">—</div></div>
-      </div>
-      <div class="scroll" style="margin-top:12px"><table id="fuTable"></table></div>
-      <div id="fuFlags"></div>
-      <div style="margin-top:11px"><button type="button" id="fuToWb" class="btn">Use total fuel in weight &amp; balance</button></div>
-    </div>
-  </section>
-
-  <!-- ===================== WEIGHT & BALANCE ===================== -->
-  <section id="wb" hidden>
-    <div class="card">
-      <h2>Loading — all masses in kg</h2>
-      <div class="grid">
-        <div><label>Empty mass (kg)</label><input id="wbEW" type="number" inputmode="decimal" value="846.5"></div>
-        <div><label>Empty arm (mm)</label><input id="wbEA" type="number" inputmode="decimal" step="0.1" value="961.6"></div>
-        <div><label>Pilot (kg)</label><input id="wbP" type="number" inputmode="decimal" value="80"></div>
-        <div><label>Front pax (kg)</label><input id="wbFP" type="number" inputmode="decimal" value="0"></div>
-        <div><label>Rear pax (kg)</label><input id="wbR" type="number" inputmode="decimal" value="0"></div>
-        <div><label>Baggage (kg)</label><input id="wbB" type="number" inputmode="decimal" value="0"></div>
-        <div><label>Fuel (L)</label><input id="wbF" type="number" inputmode="decimal" value="200"></div>
-        <div><label>Trip fuel (L)</label><input id="wbTF" type="number" inputmode="decimal" value="0"></div>
-      </div>
-      <div style="margin-top:10px">
-        <label class="chk"><input type="checkbox" id="wbBackoff">Front seats have the 2-in back-off option (0800.xxM) — arm 47.44 in</label>
-      </div>
-      <div style="margin-top:10px">
-        <label class="chk"><input type="checkbox" id="wbConfirm">The empty mass and arm above are <b>my aircraft's</b>, from its current weighing form</label>
-      </div>
-      <div id="wbOwnFlag"></div>
-      <div class="note" style="margin-top:9px">The defaults are the POH's <b>sample</b> aeroplane
-      (846.5 kg at 961.6 mm) and are almost certainly not yours. If your weighing form gives the arm in
-      inches, multiply by 25.4.</div>
-    </div>
-
-    <div class="card">
-      <h2>Result</h2>
-      <div class="out">
-        <div class="big hero"><div class="lbl">Take-off mass</div><div class="val" id="wbTOW">—</div></div>
-        <div class="big"><div class="lbl">CG at take-off</div><div class="val" id="wbCG">—</div></div>
-        <div class="big"><div class="lbl">CG limits at that mass</div><div class="val" id="wbLim">—</div></div>
-      </div>
-      <div id="wbFlags"></div>
-      <div class="grid" style="margin-top:11px">
-        <button type="button" id="wbToDep" class="btn">Use take-off mass in Departure</button>
-        <button type="button" id="wbToArr" class="btn">Use landing mass in Arrival</button>
-      </div>
-      <div class="scroll" style="margin-top:12px"><table id="wbTable"></table></div>
-    </div>
-
-    <div class="card">
-      <h2>Envelope</h2>
-      <div id="wbChart"></div>
-      <div class="note" style="margin-top:8px">Datum is the <b>front face of the firewall</b>. Forward limit varies
-      in a straight line between 913 mm at 1000 kg, 949 mm at 1250 kg and 1071 mm at 1400 kg; aft limit is
-      1205 mm at all masses (landing gear extended). These are the POH's own metric figures, which are
-      rounded independently of the inch values rather than converted from them.
-      ● take-off, ○ after trip fuel.</div>
-    </div>
-
-    <div class="card"><h2>Arms and limits used</h2>
-      <div class="note" style="margin-bottom:10px">The POH states the CG limits and the baggage station in both units; those metric values are used as printed. The seat and fuel arms appear only in inches in Figure 6.3 and are converted. Figure 6.3 also uses a baggage arm of 102.54 in (2604 mm) where Section 6.3 states 102.36 in (2.600 m) — the dual-unit figure is used, a difference of under 0.2 mm of CG.</div>
-      <div class="scroll"><table id="wbRef"></table></div>
-    </div>
-  </section>
-
   <!-- ===================== TAKE-OFF ===================== -->
   <section id="to">
     <div class="card">
@@ -440,9 +309,6 @@ svg{width:100%;height:auto;display:block}
       <h2>Cruise setting</h2>
       <div class="grid">
         <div><label>Cruise PA (ft)</label><input id="crzAlt" type="number" inputmode="numeric" value="6500"></div>
-        <div><label>Usable fuel (L)</label><input id="crzFuel" type="number" inputmode="decimal" value="326"></div>
-        <div><label>Leg distance (NM)</label><input id="crzDist" type="number" inputmode="numeric" value="0" placeholder="0 = skip"></div>
-        <div><label>Reserve (min)</label><input id="crzRes" type="number" inputmode="numeric" value="45"></div>
       </div>
       <div style="margin-top:11px" class="seg" id="mixSeg">
         <button aria-pressed="true" data-m="bestPower">Best power</button>
@@ -455,7 +321,8 @@ svg{width:100%;height:auto;display:block}
       <div id="crzFlags"></div>
       <div class="note" style="margin-top:10px">POH level-flight tables at <b>1335 kg</b>, no antennas or
       external lights. Interpolated between tabulated altitudes (500–12 500 ft). A typical IFR antenna fit
-      costs about −3.2 kt and −2% range. Endurance and range exclude climb, descent and taxi.</div>
+      costs about −3.2 kt and −2% range. Fuel planning lives in SkyDemon and ForeFlight — this is the
+      POH performance table only.</div>
     </div>
   </section>
 
@@ -793,37 +660,6 @@ const BASES = {
   }
 };
 
-/* Weight & balance — POH Section 2.9 (limits) and Figure 6.3 (arms).
-   Datum is the front face of the firewall; arms in mm, masses in kg.
-
-   The POH states the CG limits and the baggage / cargo stations in both units,
-   and its metric figures are independently rounded rather than exact
-   conversions (35.9 in is 911.9 mm, but the manual says 0.913 m). The stated
-   metric values are used verbatim. The seat and fuel arms appear only in
-   inches in Figure 6.3, so those are converted and marked as such.
-
-   Figure 6.3's sample uses a baggage arm of 102.54 in (2604 mm) while Section
-   6.3 states 102.36 in (2.600 m). The dual-unit figure is used here; the
-   difference moves the CG by under 0.2 mm at any realistic load. */
-const MM_PER_IN = 25.4;
-const WB = {
-  arms:{
-    front:        { mm:45.38*MM_PER_IN, src:"conv" },
-    frontBackoff: { mm:47.44*MM_PER_IN, src:"conv" },
-    rear:         { mm:80.00*MM_PER_IN, src:"conv" },
-    fuel:         { mm:42.70*MM_PER_IN, src:"conv" },
-    baggage:      { mm:2600,            src:"poh"  }
-  },
-  fwdLimit:[[1000,913],[1250,949],[1400,1071]],   // kg, mm — POH 2.9 metric
-  aftLimit:1205,                                   // mm — POH 2.9 metric
-  maxKg:{ tow:1400, baggage:65, rearSeats:231 },
-  fuel:{ usableL:326, kgPerL:0.72 }
-};
-const inOf = mm => mm / MM_PER_IN;
-const fwdLimitAt = kg => interp(clamp(kg, WB.fwdLimit[0][0], WB.fwdLimit[2][0]),
-                                WB.fwdLimit.map(p=>p[0]), WB.fwdLimit.map(p=>p[1]));
-
-/* ------------------------------------------------------------------ */
 const $ = id => document.getElementById(id);
 const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v) ? v : 0; };
 // Part-NCO by default: Unfactored is raw test-pilot data with no margin,
@@ -1109,21 +945,16 @@ function cruiseAt(mixKey, pa){
 }
 
 function renderCruise(){
-  const pa = num("crzAlt"), fuelL = num("crzFuel"), d = num("crzDist"), res = num("crzRes");
-  const fuel = fuelL / 3.785;                       // litres in, US gal for the tables
+  /* The POH level-flight table, straight. Endurance, range and leg fuel used
+     to live here; fuel planning is done in SkyDemon and ForeFlight instead. */
+  const pa = num("crzAlt");
   const { rows, clamped } = cruiseAt(mix, pa);
-  let h = `<tr><th>%BHP</th><th>RPM</th><th>MP</th><th>TAS</th><th>L/h</th><th>gal/h</th>
-           <th>Endur</th><th>Range</th>${d?"<th>Leg</th><th>Fuel L</th>":""}</tr>`;
+  let h = `<tr><th>%BHP</th><th>RPM</th><th>MP in.Hg</th><th>CAS kt</th><th>TAS kt</th><th>L/h</th><th>US gal/h</th></tr>`;
   for (const b of rows) b.rows.forEach((r,i) => {
-    const usable = Math.max(0, fuel - res/60*r.ff), endur = usable/r.ff, range = endur*b.tas;
-    const legT = d ? d/b.tas : 0;
-    h += `<tr${i===0?' class="rec"':''}><td>${i===0?b.bhp+"%":""}</td><td>${r.rpm}</td>
-      <td>${r.mp.toFixed(1)}</td><td>${Math.round(b.tas)}</td><td>${(r.ff*3.785).toFixed(1)}</td>
-      <td>${r.ff.toFixed(1)}</td>
-      <td>${Math.floor(endur)}:${String(Math.round((endur%1)*60)).padStart(2,"0")}</td>
-      <td>${Math.round(range)}</td>
-      ${d?`<td>${Math.floor(legT)}:${String(Math.round((legT%1)*60)).padStart(2,"0")}</td>
-           <td>${(legT*r.ff*3.785).toFixed(1)}</td>`:""}</tr>`;
+    h += `<tr${i===0?' class="rec"':''}><td>${i===0?b.bhp+"%":""}</td><td>${r.rpm}</td>` +
+         `<td>${r.mp.toFixed(1)}</td><td>${i===0?Math.round(b.cas):""}</td>` +
+         `<td>${i===0?Math.round(b.tas):""}</td>` +
+         `<td>${(r.ff*3.785).toFixed(1)}</td><td>${r.ff.toFixed(1)}</td></tr>`;
   });
   $("crzTable").innerHTML = h;
   $("crzFlags").innerHTML = (clamped ? flag("warn","Outside the cruise table",
@@ -1131,115 +962,7 @@ function renderCruise(){
     + (rows.length ? "" : flag("bad","No data at this altitude",""));
 }
 
-/* ---------------------------- W & B ---------------------------- */
-function renderWB(){
-  const frontArm = ($("wbBackoff").checked ? WB.arms.frontBackoff : WB.arms.front).mm;
-  const fuelKg = l => l * WB.fuel.kgPerL;
-  const items = [
-    { n:"Empty aircraft", kg:num("wbEW"), arm:num("wbEA") },
-    { n:"Pilot",          kg:num("wbP"),  arm:frontArm },
-    { n:"Front passenger",kg:num("wbFP"), arm:frontArm },
-    { n:"Rear passengers",kg:num("wbR"),  arm:WB.arms.rear.mm },
-    { n:"Baggage",        kg:num("wbB"),  arm:WB.arms.baggage.mm },
-    { n:`Fuel — ${fmt(num("wbF"))} L`, kg:fuelKg(num("wbF")), arm:WB.arms.fuel.mm }
-  ];
-  const sum = a => a.reduce((s,x)=>s+x, 0);
-  const tow  = sum(items.map(i=>i.kg));
-  const mom  = sum(items.map(i=>i.kg*i.arm));
-  const cg   = tow ? mom/tow : 0;
-  const tripKg = fuelKg(Math.min(num("wbTF"), num("wbF")));
-  const ldw  = tow - tripKg, ldMom = mom - tripKg*WB.arms.fuel.mm, ldCg = ldw ? ldMom/ldw : 0;
 
-  $("wbTOW").innerHTML = fmt(tow,1) + ` <small>kg / ${fmt(tow*LB_PER_KG)} lb</small>`;
-  $("wbCG").innerHTML  = fmt(cg,0) + ` <small>mm / ${fmt(inOf(cg),2)} in</small>`;
-  const fwd = fwdLimitAt(tow);
-  $("wbLim").innerHTML = fmt(fwd,0) + `<small> – </small>` + fmt(WB.aftLimit,0) + ` <small>mm</small>`;
-
-  let h = `<tr><th>Item</th><th>Mass kg</th><th>Arm mm</th><th>Moment kg·mm</th></tr>`;
-  for (const i of items) if (i.kg)
-    h += `<tr><td>${i.n}</td><td>${fmt(i.kg,1)}</td><td>${fmt(i.arm,0)}</td><td>${fmt(i.kg*i.arm)}</td></tr>`;
-  h += `<tr class="rec"><td><b>Take-off</b></td><td><b>${fmt(tow,1)}</b></td><td><b>${fmt(cg,0)}</b></td><td><b>${fmt(mom)}</b></td></tr>`;
-  if (tripKg) h += `<tr><td>After ${fmt(num("wbTF"))} L trip fuel</td><td>${fmt(ldw,1)}</td><td>${fmt(ldCg,0)}</td><td>${fmt(ldMom)}</td></tr>`;
-  $("wbTable").innerHTML = h;
-
-  /* The empty mass and arm decide every number on this tab, and a wrong one
-     produces a plausible answer with no symptom — so the sample figures are
-     called out until they are replaced and explicitly confirmed. */
-  const onSample = Math.abs(num("wbEW") - 846.5) < 0.05 && Math.abs(num("wbEA") - 961.6) < 0.05;
-  $("wbOwnFlag").innerHTML =
-    onSample ? flag("bad","These are the POH's sample aircraft figures",
-        "846.5 kg at 961.6 mm belongs to the manual's example aeroplane, not yours. " +
-        "Every mass and CG below is wrong until you enter your own weighing-form figures.")
-    : !$("wbConfirm").checked ? flag("warn","Empty mass and arm not confirmed",
-        "Tick the box above once you have checked these against your aircraft's current weighing form.")
-    : "";
-
-  let f = "";
-  if (tow > WB.maxKg.tow) f += flag("bad","Over max take-off mass",
-      `${fmt(tow,1)} kg exceeds ${WB.maxKg.tow} kg by ${fmt(tow-WB.maxKg.tow,1)} kg.`);
-  if (num("wbB") > WB.maxKg.baggage) f += flag("bad","Baggage over limit",
-      `${fmt(num("wbB"),1)} kg exceeds the ${WB.maxKg.baggage} kg baggage-compartment limit.`);
-  if (num("wbR") > WB.maxKg.rearSeats) f += flag("bad","Rear seats over limit",
-      `${fmt(num("wbR"),1)} kg exceeds the ${WB.maxKg.rearSeats} kg maximum on the rear seats.`);
-  if (num("wbF") > WB.fuel.usableL) f += flag("warn","More than usable fuel",
-      `${fmt(num("wbF"))} L exceeds the ${WB.fuel.usableL} L usable.`);
-  const chk = (w, g, when) => {
-    if (!w) return "";
-    const lo = fwdLimitAt(w);
-    if (g < lo) return flag("bad",`CG forward of limit ${when}`,
-      `${fmt(g,0)} mm vs ${fmt(lo,0)} mm forward limit at ${fmt(w,1)} kg.`);
-    if (g > WB.aftLimit) return flag("bad",`CG aft of limit ${when}`,
-      `${fmt(g,0)} mm vs ${fmt(WB.aftLimit,0)} mm aft limit.`);
-    return flag("ok",`Within envelope ${when}`,
-      `CG ${fmt(g,0)} mm, limits ${fmt(lo,0)}–${fmt(WB.aftLimit,0)} mm at ${fmt(w,1)} kg.`);
-  };
-  f += chk(tow, cg, "at take-off");
-  if (tripKg) f += chk(ldw, ldCg, "after trip fuel");
-  $("wbFlags").innerHTML = f;
-
-  drawEnvelope(tow, cg, tripKg ? ldw : null, ldCg);
-  WB_TOW = tow; WB_LDW = ldw; WB_CG = cg; WB_LDCG = ldCg;
-
-  $("wbRef").innerHTML = `<tr><th>Station</th><th>Arm mm</th><th>Arm in</th><th>Source</th><th>Limit</th></tr>` +
-    [["Front seats (standard)", WB.arms.front, "—"],
-     ["Front seats (2-in back-off)", WB.arms.frontBackoff, "—"],
-     ["Rear seats", WB.arms.rear, "231 kg"],
-     ["Fuel", WB.arms.fuel, "326 L usable"],
-     ["Baggage", WB.arms.baggage, "65 kg"]]
-    .map(([n,a,lim]) => `<tr><td>${n}</td><td>${fmt(a.mm,0)}</td><td>${fmt(inOf(a.mm),2)}</td>` +
-      `<td><span class="src">${a.src === "poh" ? "POH metric" : "converted from in"}</span></td><td>${lim}</td></tr>`).join("") +
-    `<tr><td>Max take-off mass</td><td colspan="3">—</td><td>1400 kg</td></tr>` +
-    `<tr><td>CG forward limit</td><td colspan="4">913 mm @1000 kg · 949 mm @1250 kg · 1071 mm @1400 kg — POH metric</td></tr>` +
-    `<tr><td>CG aft limit</td><td colspan="4">1205 mm, all masses — POH metric</td></tr>`;
-}
-
-function drawEnvelope(tow, cg, ldw, ldCg){
-  const W=560, H=380, L=52, R=14, T=14, Bm=40;
-  const x0=880, x1=1250, y0=850, y1=1450;
-  const X = v => L + (v-x0)/(x1-x0)*(W-L-R);
-  const Y = v => T + (1-(v-y0)/(y1-y0))*(H-T-Bm);
-  const env = [[1000,913],[1250,949],[1400,1071],[1400,1205],[1000,1205]];
-  // envelope below 1000 kg keeps the 35.9 in forward limit
-  const poly = [[y0,913],...env,[y0,1205]].map(([w,a])=>`${X(a)},${Y(w)}`).join(" ");
-  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight and balance envelope">`;
-  g += `<polygon points="${poly}" fill="rgba(88,166,255,.13)" stroke="#58a6ff" stroke-width="2"/>`;
-  for (let a=900; a<=1250; a+=50) g +=
-    `<line x1="${X(a)}" y1="${Y(y0)}" x2="${X(a)}" y2="${Y(y1)}" stroke="#2d3540" stroke-width="1"/>
-     <text x="${X(a)}" y="${H-Bm+18}" fill="#8b949e" font-size="11" text-anchor="middle">${a}</text>`;
-  for (let w=900; w<=1400; w+=100) g +=
-    `<line x1="${X(x0)}" y1="${Y(w)}" x2="${X(x1)}" y2="${Y(w)}" stroke="#2d3540" stroke-width="1"/>
-     <text x="${L-8}" y="${Y(w)+4}" fill="#8b949e" font-size="11" text-anchor="end">${w}</text>`;
-  g += `<text x="${(L+W-R)/2}" y="${H-6}" fill="#8b949e" font-size="11" text-anchor="middle">CG — mm aft of firewall</text>`;
-  g += `<text x="14" y="${T+10}" fill="#8b949e" font-size="11">kg</text>`;
-  if (ldw != null && tow) g += `<line x1="${X(cg)}" y1="${Y(tow)}" x2="${X(ldCg)}" y2="${Y(ldw)}"
-      stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-  if (ldw != null) g += `<circle cx="${X(ldCg)}" cy="${Y(ldw)}" r="6" fill="none" stroke="#e6edf3" stroke-width="2"/>`;
-  if (tow){
-    const ok = cg >= fwdLimitAt(tow) && cg <= WB.aftLimit && tow <= WB.maxKg.tow;
-    g += `<circle cx="${X(cg)}" cy="${Y(tow)}" r="7" fill="${ok?"#3fb950":"#f85149"}" stroke="#0d1117" stroke-width="2"/>`;
-  }
-  $("wbChart").innerHTML = g + `</svg>`;
-}
 
 
 /* ------------------------------------------------------------------ *
@@ -1400,6 +1123,8 @@ function syncAerodrome(which){
   const sel  = $(which === "dep" ? "depRwy" : "arrRwy");
   const info = $(which === "dep" ? "depAdInfo" : "arrAdInfo");
   const code = ($(S.icao).value || "").toUpperCase().trim();
+  // normalise what is shown, not just what is looked up
+  if ($(S.icao).value !== code) $(S.icao).value = code;
   const a    = adLookup(code);
   const prev = sel.value;
   sel.innerHTML = "";
@@ -1484,6 +1209,8 @@ async function fetchForecast(which){
   const btn  = $(which === "dep" ? "depFetch" : "arrFetch");
   const when = $(which === "dep" ? "depTime" : "arrTime").value;
   const code = ($(S.icao).value || "").toUpperCase().trim();
+  // normalise what is shown, not just what is looked up
+  if ($(S.icao).value !== code) $(S.icao).value = code;
   const a    = adLookup(code);
   if (!a)   { out.innerHTML = flag("warn","No coordinates",
                 "The forecast needs an aerodrome from the bundled data to know where to look."); return; }
@@ -1559,289 +1286,6 @@ const glideNM = (ft, g) => ft * g.ld / 6076.12;
 const vaAt = kg => 129 * Math.sqrt(clamp(kg, 700, MTOW_KG) / MTOW_KG);
 
 /* ==================================================================
- * Fuel planning
- *
- * Climb and cruise come from the POH tables. Descent does not exist in the
- * POH, so its rate and flow are the pilot's assumptions and are labelled as
- * such; the descent leg is credited with ground distance at cruise TAS.
- * Final reserve is priced at the POH holding flow (45% BHP, 8.5 US gal/h).
- * ================================================================== */
-const GAL_L = 3.785;
-/* NCO.OP.125 final reserve. The rule reads "at normal cruising altitude", so
-   the reserve is priced at the selected cruise consumption, not at the POH
-   holding flow — holding would under-read it by roughly a third. */
-const RESERVES = { 10:"VFR local", 30:"VFR day", 45:"VFR night / IFR" };
-let resMin = 30;
-
-function fuelBands(){                  // populate the %BHP and RPM selects
-  const mix = $("fuMix").value, pa = num("fuAlt");
-  const { rows } = cruiseAt(mix, pa);
-  const bsel = $("fuBhp"), rsel = $("fuRpm");
-  const wantB = bsel.value, wantR = rsel.value;
-  bsel.innerHTML = rows.map(b => `<option value="${b.bhp}">${b.bhp}%</option>`).join("");
-  if (rows.some(b => String(b.bhp) === wantB)) bsel.value = wantB;
-  const band = rows.find(b => String(b.bhp) === bsel.value) || rows[0];
-  rsel.innerHTML = band ? band.rows.map(r => `<option value="${r.rpm}">${r.rpm}</option>`).join("") : "";
-  if (band && band.rows.some(r => String(r.rpm) === wantR)) rsel.value = wantR;
-  return band ? { band, row: band.rows.find(r => String(r.rpm) === rsel.value) || band.rows[0] } : null;
-}
-
-function renderFuel(){
-  const dep = conditions(DEP), arr = conditions(ARR);
-  const pick = fuelBands();
-  const info = $("fuFrom");
-  if (!pick){
-    info.innerHTML = flag("bad","No cruise data at that altitude","The POH cruise tables cover 500–12 500 ft.");
-    $("fuTable").innerHTML = ""; $("fuTotal").textContent = "—"; return;
-  }
-  const { band, row } = pick;
-  const ffL = row.ff * GAL_L;
-  const cruisePA = num("fuAlt");
-  /* The POH tabulates TAS at ISA. When the temperature aloft is known, TAS is
-     recomputed from the POH's own CAS column — which reproduces the tabulated
-     TAS exactly at ISA, so this only ever corrects for the departure from it. */
-  const oatAloft = WINDS ? WINDS.temp : isaTemp(cruisePA);
-  const tas = WINDS ? tasFrom(band.cas, cruisePA, oatAloft) : band.tas;
-
-  /* Ground speed along the direct track when winds aloft are known. */
-  const A = adLookup($("rtDep").value), B = adLookup($("rtDest").value);
-  const track = (A && B) ? gcTrack(A, B) : null;
-  const wt = (WINDS && track != null)
-    ? windTriangle(tas, track, WINDS.dir, WINDS.spd) : null;
-  const gs = wt ? wt.gs : tas;
-
-  /* The climb table spans 1075–1400 kg. Clamp before the lookup, as the
-     performance panels do, so a mass outside it cannot silently extrapolate
-     into less climb fuel than the aeroplane will actually burn. */
-  const massRaw = num("fuMass"), mass = clamp(massRaw, W_KG[0], W_KG[1]);
-  const cruiseAlt = num("fuAlt");
-  const trip = num("fuTrip"), altn = num("fuAltn");
-
-  /* Climb and descent depend on the two aerodromes, which are entered on the
-     Take-off and Landing tabs — say so, since those panels are not shown here. */
-  info.innerHTML = `<div class="adinfo">
-    <b>Climb</b> from ${dep.icao || "departure"} at ${fmt(dep.elev)} ft,
-    ISA${dep.dev >= 0 ? "+" : ""}${fmt(dep.dev,0)} °C ·
-    <b>descent</b> to ${arr.icao || "arrival"} at ${fmt(arr.elev)} ft ·
-    <b>cruise</b> ${band.bhp}% / ${row.rpm} RPM, MP ${row.mp.toFixed(1)} in.Hg,
-    TAS ${Math.round(tas)} kt${wt ? `, GS <b>${Math.round(gs)} kt</b>` : ""}, ${ffL.toFixed(1)} L/h.<br>
-    ${wt ? `Track ${deg3(track)}°T · wind ${deg3(WINDS.dir)}°/${WINDS.spd} kt gives
-       ${fmt(Math.abs(wt.head),0)} kt ${wt.head >= 0 ? "headwind" : "tailwind"},
-       drift ${fmt(Math.abs(wt.wcaDeg),0)}° ${wt.wcaDeg >= 0 ? "right" : "left"}.<br>` : ""}
-    <span class="src">Aerodromes and temperatures come from the Take-off and Landing tabs.</span>
-    </div>`;
-  $("fuWindOut").innerHTML = windsNote(cruisePA, track).html;
-
-  // climb, from the POH cumulative-from-sea-level table
-  const at = (k,f) => Math.max(0, lookup3(CLIMB, mass, k, dep.dev, PA_CL, f));
-  const clT = Math.max(0, at(cruiseAlt,o=>o.t) - at(dep.elev,o=>o.t));         // minutes
-  const clF = Math.max(0, at(cruiseAlt,o=>o.f) - at(dep.elev,o=>o.f)) * GAL_L; // litres
-  const clD = Math.max(0, at(cruiseAlt,o=>o.d) - at(dep.elev,o=>o.d));         // NM
-
-  // descent — assumption, not POH
-  const dRate = Math.max(1, num("fuDrate")), dFlow = num("fuDflow");
-  const deT = Math.max(0, (cruiseAlt - arr.elev)) / dRate;      // minutes
-  const deD = deT / 60 * gs;                                     // NM over the ground
-  const deF = deT / 60 * dFlow;
-
-  const crD = Math.max(0, trip - clD - deD);
-  const crT = crD / gs * 60;
-  const crF = crT / 60 * ffL;
-
-  const tripF = clF + crF + deF;
-  const contF = tripF * num("fuCont") / 100;
-  const altF  = altn > 0 ? (altn / gs * 60) / 60 * ffL : 0;
-  const resF  = resMin / 60 * ffL;
-  const taxi  = num("fuTaxi");
-  const total = taxi + tripF + contF + altF + resF;
-  const usable = num("fuUsable");
-
-  const L = v => fmt(v,1) + " L";
-  // durations here are in minutes; show them as h:mm
-  const T = m => `${Math.floor(m/60)}:${String(Math.round(m%60)).padStart(2,"0")}`;
-  $("fuTotal").innerHTML = fmt(total,1) + ` <small>L / ${fmt(total/GAL_L,1)} US gal</small>`;
-  $("fuLeft").innerHTML  = fmt(usable-total,1) + ` <small>L</small>`;
-  $("fuTime").innerHTML  = T(clT+crT+deT) + ` <small>h:mm</small>`;
-
-  $("fuTable").innerHTML =
-    `<tr><th>Phase</th><th>Distance NM</th><th>Time</th><th>Fuel L</th><th>Source</th></tr>` +
-    `<tr><td>Taxi &amp; start</td><td>—</td><td>—</td><td>${fmt(taxi,1)}</td><td><span class="src">your allowance</span></td></tr>` +
-    `<tr><td>Climb to ${fmt(cruiseAlt)} ft</td><td>${fmt(clD,1)}</td><td>${T(clT)}</td><td>${fmt(clF,1)}</td><td><span class="src">POH 5.12–5.13</span></td></tr>` +
-    `<tr><td>Cruise</td><td>${fmt(crD,1)}</td><td>${T(crT)}</td><td>${fmt(crF,1)}</td><td><span class="src">POH 5.16–5.29</span></td></tr>` +
-    `<tr><td>Descent to ${fmt(arr.elev)} ft</td><td>${fmt(deD,1)}</td><td>${T(deT)}</td><td>${fmt(deF,1)}</td><td><span class="src">your assumption</span></td></tr>` +
-    `<tr class="rec"><td><b>Trip</b></td><td><b>${fmt(clD+crD+deD,1)}</b></td><td><b>${T(clT+crT+deT)}</b></td><td><b>${fmt(tripF,1)}</b></td><td></td></tr>` +
-    `<tr><td>Contingency ${fmt(num("fuCont"))}%</td><td>—</td><td>—</td><td>${fmt(contF,1)}</td><td><span class="src">of trip fuel</span></td></tr>` +
-    (altn > 0 ? `<tr><td>Alternate ${fmt(altn)} NM</td><td>${fmt(altn,1)}</td><td>${T(altn/gs*60)}</td><td>${fmt(altF,1)}</td><td><span class="src">same cruise setting</span></td></tr>` : "") +
-    `<tr><td>Final reserve ${resMin} min — ${RESERVES[resMin]}</td><td>—</td><td>${T(resMin)}</td>` +
-    `<td>${fmt(resF,1)}</td><td><span class="src">NCO.OP.125, at cruise flow</span></td></tr>` +
-    `<tr class="rec"><td><b>Total required</b></td><td></td><td></td><td><b>${fmt(total,1)}</b></td><td></td></tr>`;
-
-  let f = "";
-  if (deD > 0 && trip)
-    f += flag("info","Top of descent",
-      `Start down <b>${fmt(deD,0)} NM</b> before ${arr.icao || "the destination"} — ` +
-      `${fmt(cruisePA - arr.elev)} ft at ${fmt(dRate)} ft/min is ${T(deT)}, covering ` +
-      `${fmt(deD,0)} NM at ${Math.round(gs)} kt${wt ? " ground speed" : " TAS"}.`);
-  if (!trip) f += flag("info","No trip distance yet","Enter the trip distance to price the cruise leg.");
-  if (total > usable) f += flag("bad","Exceeds usable fuel",
-      `Needs ${L(total)} but only ${L(usable)} is usable — short by ${L(total-usable)}. ` +
-      `Shorten the leg, add a stop, or reduce power.`);
-  else if (trip && total > usable*0.9) f += flag("warn","Little fuel margin",
-      `Needs ${L(total)} of ${L(usable)} usable — ${L(usable-total)} spare.`);
-  else if (trip) f += flag("ok","Within usable fuel", `${L(usable-total)} spare after all allowances.`);
-  if (trip && clD + deD > trip) f += flag("warn","Trip shorter than climb and descent",
-      `Climb and descent alone cover ${fmt(clD+deD,1)} NM. The cruise leg is zero and the figures ` +
-      `above do not represent a real profile.`);
-  if (cruiseAlt <= dep.elev) f += flag("warn","Cruise altitude is not above the departure field","");
-  if (massRaw > MTOW_KG) f += flag("bad","Climb mass over MTOM",
-      `${fmt(massRaw)} kg exceeds ${fmt(MTOW_KG)} kg — the climb figures are not valid.`);
-  else if (massRaw && massRaw < W_KG[0]) f += flag("warn","Climb mass below the tabulated range",
-      `Climb computed at ${fmt(W_KG[0])} kg, the lightest the POH tabulates. Conservative: a lighter ` +
-      `aeroplane climbs faster and burns less.`);
-  $("fuFlags").innerHTML = f;
-  FUEL_TOTAL = total; FUEL_MIN = clT + crT + deT;
-}
-let FUEL_TOTAL = 0, WB_TOW = 0, WB_LDW = 0, WB_CG = 0, WB_LDCG = 0;
-let TO_ROLL = 0, TO_50 = 0, TO_VLO = 0, TO_V50 = 0, LD_ROLL = 0, LD_50 = 0, LD_V50 = 0;
-const BUILD = "2026.08.19.1157";
-
-
-/* ==================================================================
- * Route
- *
- * The route is the first thing known about a flight, so it is entered once
- * here and drives everything downstream: the departure and arrival panels,
- * the climb and descent legs, and the trip and alternate distances.
- *
- * Distances are great-circle between the bundled aerodrome coordinates —
- * the direct track, not the route actually flown. They are written into the
- * distance fields as a starting point and can be overridden; the route card
- * keeps showing the direct figure so an override is visible rather than silent.
- * ================================================================== */
-function gcNM(a, b){
-  const R = 3440.065, rad = Math.PI / 180;
-  const p1 = a[2] * rad, p2 = b[2] * rad;
-  const dp = p2 - p1, dl = (b[3] - a[3]) * rad;
-  const h = Math.sin(dp/2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) ** 2;
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
-}
-function gcTrack(a, b){                      // initial great-circle track, degrees true
-  const rad = Math.PI / 180;
-  const p1 = a[2] * rad, p2 = b[2] * rad, dl = (b[3] - a[3]) * rad;
-  const y = Math.sin(dl) * Math.cos(p2);
-  const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
-  return (Math.atan2(y, x) / rad + 360) % 360;
-}
-const deg3 = d => String(Math.round(d) % 360).padStart(3, "0");
-
-let ROUTE = { trip:null, altn:null };
-
-function syncRoute(fillDistances){
-  const up = id => ($(id).value || "").toUpperCase().trim();
-  const dep = up("rtDep"), dest = up("rtDest"), altn = up("rtAltn");
-  if ($("rtDep").value !== dep) $("rtDep").value = dep;
-  if ($("rtDest").value !== dest) $("rtDest").value = dest;
-  if ($("rtAltn").value !== altn) $("rtAltn").value = altn;
-
-  // feed the performance panels
-  $("depIcao").value = dep;
-  $("arrIcao").value = dest;
-  syncAerodrome("dep"); syncAerodrome("arr");
-
-  const A = adLookup(dep), B = adLookup(dest), C = adLookup(altn);
-  ROUTE.trip = (A && B) ? gcNM(A, B) : null;
-  ROUTE.altn = (B && C) ? gcNM(B, C) : null;
-  if (fillDistances){
-    if (ROUTE.trip != null) $("fuTrip").value = Math.round(ROUTE.trip);
-    if (ROUTE.altn != null) $("fuAltn").value = Math.round(ROUTE.altn);
-  }
-
-  let h = "";
-  const leg = (from, to, a, b, nm) => a && b
-    ? `<tr><td>${from} → ${to}</td><td>${a[0].slice(0,26)} → ${b[0].slice(0,26)}</td>` +
-      `<td>${deg3(gcTrack(a,b))}°T</td><td>${fmt(nm,0)} NM</td></tr>`
-    : "";
-  if (A || B || C){
-    h += `<div class="scroll"><table><tr><th>Leg</th><th></th><th>Track</th><th>Direct</th></tr>` +
-         leg(dep, dest, A, B, ROUTE.trip) + leg(dest, altn, B, C, ROUTE.altn) + `</table></div>`;
-  }
-  const miss = [[dep,A],[dest,B],[altn,C]].filter(([c,r]) => c && !r).map(([c]) => c);
-  if (miss.length) h += flag("warn","Not in the bundled data",
-      `${miss.join(", ")} — enter that aerodrome's elevation, runway and distances by hand.`);
-  if (ROUTE.trip != null && num("fuTrip") && Math.abs(num("fuTrip") - ROUTE.trip) > 1)
-    h += flag("info","Trip distance overridden",
-      `Using ${fmt(num("fuTrip"))} NM against a direct track of ${fmt(ROUTE.trip,0)} NM.`);
-  if (ROUTE.altn != null && num("fuAltn") && Math.abs(num("fuAltn") - ROUTE.altn) > 1)
-    h += flag("info","Alternate distance overridden",
-      `Using ${fmt(num("fuAltn"))} NM against a direct track of ${fmt(ROUTE.altn,0)} NM.`);
-  if (dep && dest && dep === dest)
-    h += flag("info","Departure and destination are the same","A local flight — set the trip distance by hand.");
-  $("rtOut").innerHTML = h;
-}
-
-
-/* ==================================================================
- * Atmosphere, wind triangle, and true airspeed
- * ================================================================== */
-/* ICAO standard atmosphere pressure ratio at a pressure altitude, and the
-   altitude of a pressure level — used to pick the right forecast level. */
-const deltaP  = paFt => Math.pow(1 - 6.87535e-6 * paFt, 5.25588);
-const plToAlt = hPa  => (1 - Math.pow(hPa / 1013.25, 1 / 5.25588)) / 6.87535e-6;
-const PLEVELS = [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500];
-const nearestPL = paFt =>
-  PLEVELS.reduce((a, b) => Math.abs(plToAlt(b) - paFt) < Math.abs(plToAlt(a) - paFt) ? b : a);
-
-/* TAS from CAS at a pressure altitude and an actual temperature.
-   Checked against the POH: 6500 ft, 65% best economy, CAS 134 kt at ISA
-   returns 148 kt, exactly the manual's tabulated TAS. */
-function tasFrom(cas, paFt, oatC){
-  const sigma = deltaP(paFt) / ((oatC + 273.15) / 288.15);
-  return cas / Math.sqrt(sigma);
-}
-
-/* Wind triangle for a desired track. Returns ground speed, drift and the
-   head (positive) or tail (negative) component along track. */
-function windTriangle(tas, trackDeg, windFromDeg, windKt){
-  const rad = Math.PI / 180, d = (windFromDeg - trackDeg) * rad;
-  const head  = windKt * Math.cos(d);      // +ve slows you down
-  const cross = windKt * Math.sin(d);      // +ve from the right
-  const wca   = Math.asin(Math.max(-1, Math.min(1, cross / tas)));
-  const gs    = tas * Math.cos(wca) - head;
-  return { gs: Math.max(1, gs), head, cross, wcaDeg: wca / rad };
-}
-
-/* ==================================================================
- * Sun times
- *
- * EASA defines night as the period between the end of evening civil twilight
- * and the beginning of morning civil twilight, so civil twilight — not sunset —
- * is what decides whether a 45-minute reserve applies. Both are computed.
- * Classic Almanac algorithm; returns minutes UTC, or null in polar cases.
- * ================================================================== */
-function sunEvent(lat, lon, dateUTC, zenith, rise){
-  const rad = Math.PI / 180;
-  const start = Date.UTC(dateUTC.getUTCFullYear(), 0, 0);
-  const D = Math.floor((Date.UTC(dateUTC.getUTCFullYear(), dateUTC.getUTCMonth(), dateUTC.getUTCDate()) - start) / 86400000);
-  const lngHour = lon / 15;
-  const t = D + ((rise ? 6 : 18) - lngHour) / 24;
-  const M = 0.9856 * t - 3.289;
-  let L = (M + 1.916 * Math.sin(M * rad) + 0.020 * Math.sin(2 * M * rad) + 282.634 + 360) % 360;
-  let RA = (Math.atan(0.91764 * Math.tan(L * rad)) / rad + 360) % 360;
-  RA += (Math.floor(L / 90) - Math.floor(RA / 90)) * 90;
-  RA /= 15;
-  const sinDec = 0.39782 * Math.sin(L * rad);
-  const cosDec = Math.cos(Math.asin(sinDec));
-  const cosH = (Math.cos(zenith * rad) - sinDec * Math.sin(lat * rad)) / (cosDec * Math.cos(lat * rad));
-  if (cosH > 1 || cosH < -1) return null;                      // sun never reaches that angle
-  let H = (rise ? 360 - Math.acos(cosH) / rad : Math.acos(cosH) / rad) / 15;
-  let UT = (H + RA - 0.06571 * t - 6.622 - lngHour) % 24;
-  return ((UT + 24) % 24) * 60;
-}
-const SUN_Z = 90.8333, CIVIL_Z = 96;
-const hhmmUTC = m => m == null ? "—"
-  : `${String(Math.floor(m / 60) % 24).padStart(2,"0")}:${String(Math.round(m % 60)).padStart(2,"0")}Z`;
-
-/* ==================================================================
  * Favoured runway
  * ================================================================== */
 function bestRunway(which){
@@ -1877,117 +1321,9 @@ function bestRunway(which){
 }
 
 
-/* ==================================================================
- * Winds aloft — Open-Meteo pressure-level forecast at the cruise level,
- * sampled at the midpoint of each leg. Online, cached, clearly model data.
- * ================================================================== */
-let WINDS = null;                       // { level, dir, spd, temp, at, valid }
-
-function midpoint(a, b){
-  const rad = Math.PI/180, deg = 180/Math.PI;
-  const p1 = a[2]*rad, l1 = a[3]*rad, p2 = b[2]*rad, dl = (b[3]-a[3])*rad;
-  const bx = Math.cos(p2)*Math.cos(dl), by = Math.cos(p2)*Math.sin(dl);
-  const p3 = Math.atan2(Math.sin(p1)+Math.sin(p2), Math.sqrt((Math.cos(p1)+bx)**2 + by**2));
-  return [0,0, p3*deg, (l1 + Math.atan2(by, Math.cos(p1)+bx))*deg];
-}
-
-async function fetchWinds(){
-  const out = $("fuWindOut"), btn = $("fuWind");
-  const A = adLookup($("rtDep").value), B = adLookup($("rtDest").value);
-  if (!A || !B){ out.innerHTML = flag("warn","Route incomplete",
-      "Both departure and destination must be in the bundled data to locate the leg."); return; }
-  const when = $("rtEtd").value;
-  if (!when){ out.innerHTML = flag("warn","No off-blocks time","Set the off-blocks time (UTC) first."); return; }
-  const pa = num("fuAlt"), lvl = nearestPL(pa), mid = midpoint(A, B);
-  btn.disabled = true; btn.textContent = "Fetching…";
-  try {
-    const u = `https://api.open-meteo.com/v1/forecast?latitude=${mid[2].toFixed(3)}&longitude=${mid[3].toFixed(3)}` +
-      `&hourly=wind_speed_${lvl}hPa,wind_direction_${lvl}hPa,temperature_${lvl}hPa` +
-      `&wind_speed_unit=kn&timezone=UTC&forecast_days=16`;
-    const res = await fetch(u);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const d = await res.json();
-    const hour = when.slice(0,13) + ":00";
-    let i = d.hourly.time.indexOf(hour);
-    if (i < 0){
-      const target = Date.parse(hour + "Z"); let best = Infinity;
-      d.hourly.time.forEach((t,k) => { const dt = Math.abs(Date.parse(t+"Z")-target); if (dt<best){best=dt;i=k;} });
-      if (best > 36*3600e3) throw new Error("outside the forecast range");
-    }
-    WINDS = { level:lvl, dir:Math.round(d.hourly[`wind_direction_${lvl}hPa`][i]),
-              spd:Math.round(d.hourly[`wind_speed_${lvl}hPa`][i]),
-              temp:Math.round(d.hourly[`temperature_${lvl}hPa`][i]),
-              valid:d.hourly.time[i].slice(0,16).replace("T"," "), at:Date.now() };
-    try { localStorage.setItem("tb20.winds", JSON.stringify(WINDS)); } catch(e){}
-    renderFuel();
-  } catch (err){
-    out.innerHTML = flag("bad","Could not fetch winds aloft",
-      `${err.message}. This needs a connection. Without it the plan assumes still air, which ` +
-      `understates fuel into a headwind.`);
-  } finally { btn.disabled = false; btn.textContent = "Fetch winds aloft for the cruise level"; }
-}
-
-function windsNote(pa, track){
-  if (!WINDS) return { gs:null, html: flag("warn","Still air assumed",
-      "No winds aloft fetched, so cruise time uses TAS. Into a headwind this understates the fuel " +
-      "required — fetch the winds before relying on the figure.") };
-  const age = Math.round((Date.now() - WINDS.at)/60000);
-  const isaAt = isaTemp(plToAlt(WINDS.level));
-  return { ok:true, html: flag("ok", `Winds aloft — ${WINDS.level} hPa (${fmt(plToAlt(WINDS.level))} ft) at ${WINDS.valid}Z`,
-      `${deg3(WINDS.dir)}°T / ${WINDS.spd} kt, ${WINDS.temp} °C ` +
-      `(ISA${WINDS.temp - isaAt >= 0 ? "+" : ""}${fmt(WINDS.temp - isaAt,0)}). ` +
-      `Fetched ${age < 1 ? "just now" : hhmm(age)+" ago"}. Model forecast, not an observation.`) };
-}
-
-
-/* ==================================================================
- * Sun times for the route, and the reserve they imply
- * ================================================================== */
-function renderSun(){
-  const out = $("sunOut");
-  const A = adLookup($("rtDep").value), B = adLookup($("rtDest").value);
-  const etd = $("rtEtd").value;
-  if (!etd || (!A && !B)){ out.innerHTML = ""; SUN = null; return; }
-  const d = new Date(etd + "Z");
-  if (isNaN(d)){ out.innerHTML = ""; SUN = null; return; }
-  const rows = [], leg = [];
-  for (const [name, ad] of [["Departure", A], ["Destination", B]]){
-    if (!ad) continue;
-    const r = {
-      name, icao: name === "Departure" ? $("rtDep").value : $("rtDest").value,
-      dawn: sunEvent(ad[2], ad[3], d, CIVIL_Z, true),
-      rise: sunEvent(ad[2], ad[3], d, SUN_Z,   true),
-      set:  sunEvent(ad[2], ad[3], d, SUN_Z,   false),
-      dusk: sunEvent(ad[2], ad[3], d, CIVIL_Z, false)
-    };
-    rows.push(r); leg.push(r);
-  }
-  if (!rows.length){ out.innerHTML = ""; SUN = null; return; }
-  let h = `<div class="scroll"><table><tr><th>Aerodrome</th><th>Civil dawn</th><th>Sunrise</th>` +
-          `<th>Sunset</th><th>Civil dusk</th></tr>` +
-    rows.map(r => `<tr><td>${r.icao} ${r.name === "Departure" ? "(dep)" : "(dest)"}</td>` +
-      `<td>${hhmmUTC(r.dawn)}</td><td>${hhmmUTC(r.rise)}</td><td>${hhmmUTC(r.set)}</td>` +
-      `<td>${hhmmUTC(r.dusk)}</td></tr>`).join("") + `</table></div>`;
-
-  /* EASA night runs from the end of evening civil twilight to the beginning of
-     morning civil twilight, so civil dusk/dawn — not sunset — decide whether a
-     45-minute reserve applies. */
-  const etaMin = (d.getUTCHours()*60 + d.getUTCMinutes() + (FUEL_MIN || 0)) % 1440;
-  const dest = leg[leg.length-1];
-  const isNight = t => dest.dawn != null && dest.dusk != null && (t > dest.dusk || t < dest.dawn);
-  SUN = { night: isNight(etaMin), etaMin, dest };
-  h += flag(SUN.night ? "warn" : "info",
-    SUN.night ? "Arrival is at night" : "Arrival is by day",
-    `Estimated arrival ${hhmmUTC(etaMin)} against civil dusk ${hhmmUTC(dest.dusk)} at ${dest.icao}. ` +
-    (SUN.night
-      ? `Night VFR or IFR — NCO.OP.125 requires a <b>45 minute</b> final reserve.`
-      : `VFR by day — a 30 minute final reserve satisfies NCO.OP.125.`));
-  if (SUN.night && resMin < 45)
-    h += flag("bad","Reserve too short for a night arrival",
-      `The reserve is set to ${resMin} min. Select <b>VFR night / IFR · 45 min</b>.`);
-  out.innerHTML = h;
-}
-let SUN = null, FUEL_MIN = 0;
+/* Captured by the take-off and landing renderers for the summary. */
+let TO_ROLL = 0, TO_50 = 0, TO_VLO = 0, TO_V50 = 0, LD_ROLL = 0, LD_50 = 0, LD_V50 = 0;
+const BUILD = "2026.08.25.0943";
 
 /* ==================================================================
  * Flight summary
@@ -1995,33 +1331,21 @@ let SUN = null, FUEL_MIN = 0;
 function summaryText(){
   const dep = conditions(DEP), arr = conditions(ARR);
   const B = BASES[basis];
-  const m  = ft => fmt(toM(ft)) + " m";
-  const L  = [];
+  const m = ft => fmt(toM(ft)) + " m";
   const rule = "-".repeat(52);
-  L.push(`TB20 PERFORMANCE & LOADING`);
-  L.push(`${$("rtDep").value || "----"} -> ${$("rtDest").value || "----"}` +
-         ($("rtAltn").value ? `  alt ${$("rtAltn").value}` : "") +
-         ($("rtEtd").value ? `   off-blocks ${$("rtEtd").value.replace("T"," ")}Z` : ""));
+  const L = [];
+  L.push(`TB20 PERFORMANCE`);
   L.push(`computed ${new Date().toISOString().slice(0,16).replace("T"," ")}Z  ·  build ${BUILD}`);
+  L.push(`factoring basis: ${B.label}`);
   L.push(rule);
-  L.push(`MASS & BALANCE`);
-  L.push(`  Take-off mass   ${fmt(WB_TOW,1)} kg    CG ${fmt(WB_CG,0)} mm  (${fmt(fwdLimitAt(WB_TOW),0)}-${WB.aftLimit})`);
-  L.push(`  Landing mass    ${fmt(WB_LDW,1)} kg    CG ${fmt(WB_LDCG,0)} mm  (${fmt(fwdLimitAt(WB_LDW),0)}-${WB.aftLimit})`);
-  L.push(rule);
-  L.push(`FUEL`);
-  L.push(`  Total required  ${fmt(FUEL_TOTAL,1)} L  of ${fmt(num("fuUsable"),0)} L usable`);
-  L.push(`  Reserve         ${resMin} min (${RESERVES[resMin]})`);
-  if (WINDS) L.push(`  Winds aloft     ${deg3(WINDS.dir)}/${WINDS.spd} kt at ${WINDS.level} hPa`);
-  else       L.push(`  Winds aloft     not fetched - still air assumed`);
-  L.push(rule);
-  L.push(`TAKE-OFF  ${dep.icao || "----"}   ${B.label}`);
+  L.push(`TAKE-OFF  ${dep.icao || "----"}`);
   L.push(`  PA ${fmt(dep.pa)} ft   ISA${dep.dev>=0?"+":""}${fmt(dep.dev,0)}   ${fmt(dep.wRaw)} kg`);
   L.push(`  Wind ${fmt(Math.abs(dep.hw),0)} kt ${dep.hw>=0?"HW":"TW"}, ${fmt(dep.xw,0)} kt cross`);
   L.push(`  Ground roll     ${m(TO_ROLL)}`);
   L.push(`  To 50 ft        ${m(TO_50)}` + (dep.tora ? `   TORA ${m(dep.tora)}` : ""));
   L.push(`  Lift-off ${fmt(TO_VLO)} KIAS   over 50 ft ${fmt(TO_V50)} KIAS`);
   L.push(rule);
-  L.push(`LANDING   ${arr.icao || "----"}   ${B.label}`);
+  L.push(`LANDING   ${arr.icao || "----"}`);
   L.push(`  PA ${fmt(arr.pa)} ft   ISA${arr.dev>=0?"+":""}${fmt(arr.dev,0)}   ${fmt(arr.wRaw)} kg`);
   L.push(`  Wind ${fmt(Math.abs(arr.hw),0)} kt ${arr.hw>=0?"HW":"TW"}, ${fmt(arr.xw,0)} kt cross`);
   L.push(`  Ground roll     ${m(LD_ROLL)}`);
@@ -2099,9 +1423,8 @@ function renderAll(){
   $("regNote").innerHTML = flag(B.note[0], B.note[1], B.note[2]);
   renderConditions(dep, DEP_IDS, "condFlags", false);
   renderConditions(arr, ARR_IDS, "aCondFlags", true);
-  renderTakeoff(dep); renderLanding(arr); renderClimb(dep); renderCruise(); renderWB();
-  renderFuel(); renderRefLive(dep); syncRoute(false); renderSun();
-  bestRunway("dep"); bestRunway("arr"); renderSummary();
+  renderTakeoff(dep); renderLanding(arr); renderClimb(dep); renderCruise();
+  renderRefLive(dep); bestRunway("dep"); bestRunway("arr"); renderSummary();
   // aerodrome identifiers on the result headings
   $("toHead").textContent = dep.icao ? `Take-off distance — ${dep.icao}` : "Take-off distance";
   $("ldHead").textContent = arr.icao ? `Landing distance — ${arr.icao}` : "Landing distance";
@@ -2110,9 +1433,8 @@ function renderAll(){
 const FIELDS = ["depIcao","elev","qnh","oat","wt","rwy","wdir","wspd","wref","varn","slope","surf","tora","toda","asda",
                 "arrIcao","aElev","aQnh","aOat","aWt","aRwy","aWdir","aWspd","aWref","aVarn","aSlope","aSurf","lda",
                 "depMetar","arrMetar","depRwy","arrRwy","depTime","arrTime",
-                "rtDep","rtDest","rtAltn","rtEtd","fuTrip","fuAlt","fuAltn","fuMass","fuMix","fuBhp","fuRpm","fuTaxi","fuCont",
-                "fuDrate","fuDflow","fuUsable","glAlt",
-                "cFrom","cTo","crzAlt","crzFuel","crzDist","crzRes",
+                "glAlt",
+                "cFrom","cTo","crzAlt",
                 "wbEW","wbEA","wbP","wbFP","wbR","wbB","wbF","wbTF"];
 try {
   const s = JSON.parse(localStorage.getItem("tb20.v3") || "{}");
@@ -2129,15 +1451,11 @@ try {
      chosen it. Force Part-NCO once, then respect the choice from then on. */
   if (s._basisMigrated) { if (s._basis) basis = s._basis; }
   else { basis = "nco"; }
-  if (s._backoff) $("wbBackoff").checked = s._backoff;
-  if (s._wbConfirm) $("wbConfirm").checked = s._wbConfirm;
-  if (s._res) resMin = +s._res;
 } catch(e){ /* first run, or storage unavailable */ }
 
 function save(){
   try {
-    const o = { _mix:mix, _basis:basis, _backoff:$("wbBackoff").checked,
-                _wbConfirm:$("wbConfirm").checked, _res:resMin, _basisMigrated:true };
+    const o = { _mix:mix, _basis:basis, _basisMigrated:true };
     for (const k of FIELDS) if ($(k)) o[k] = $(k).value;
     localStorage.setItem("tb20.v3", JSON.stringify(o));
   } catch(e){ /* private mode — not worth interrupting the pilot over */ }
@@ -2147,53 +1465,31 @@ for (const k of FIELDS)
     $(k).addEventListener("input", () => { renderAll(); save(); });
 $("depMetar").addEventListener("input", () => applyMetar("dep", true));
 $("arrMetar").addEventListener("input", () => applyMetar("arr", true));
-for (const id of ["rtDep","rtDest","rtAltn"])
-  $(id).addEventListener("input", () => { syncRoute(true); renderAll(); save(); });
+$("depIcao").addEventListener("input", () => { syncAerodrome("dep"); renderAll(); save(); });
+$("arrIcao").addEventListener("input", () => { syncAerodrome("arr"); renderAll(); save(); });
 $("depRwy").addEventListener("change", () => applyRunway("dep"));
 $("arrRwy").addEventListener("change", () => applyRunway("arr"));
 $("depFetch").addEventListener("click", () => fetchForecast("dep"));
 $("arrFetch").addEventListener("click", () => fetchForecast("arr"));
-$("wbBackoff").addEventListener("change", () => { renderAll(); save(); });
-$("wbConfirm").addEventListener("change", () => { renderAll(); save(); });
 
 // Hand results forward: fuel decides the load, the load decides the masses,
 // the masses drive take-off and landing. Retyping between them invites a typo.
-$("fuToWb").addEventListener("click", () => {
-  $("wbF").value = FUEL_TOTAL.toFixed(1);
-  document.querySelector('#tabs button[data-t=wb]').click();
-  renderAll(); save();
-});
-$("wbToDep").addEventListener("click", () => {
-  $("wt").value = Math.round(WB_TOW);
-  document.querySelector('#tabs button[data-t=to]').click();
-  renderAll(); save();
-});
-$("wbToArr").addEventListener("click", () => {
-  $("aWt").value = Math.round(WB_LDW || WB_TOW);
-  document.querySelector('#tabs button[data-t=ldg]').click();
-  renderAll(); save();
-});
-$("resSeg").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  resMin = +b.dataset.r;
-  for (const x of $("resSeg").children) x.setAttribute("aria-pressed", x === b);
-  renderAll(); save();      // the sun block also depends on the reserve choice
-});
-$("fuWind").addEventListener("click", fetchWinds);
+
+
+
+
 $("sumCopy").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText(summaryText()); $("sumCopy").textContent = "Copied"; }
   catch(e){ $("sumCopy").textContent = "Copy failed — select the text instead"; }
   setTimeout(() => { $("sumCopy").textContent = "Copy to clipboard"; }, 2500);
 });
 $("sumMail").addEventListener("click", () => {
-  const subj = `TB20 ${$("rtDep").value || "----"}-${$("rtDest").value || "----"}` +
-               ($("rtEtd").value ? ` ${$("rtEtd").value.slice(0,10)}` : "");
+  const subj = `TB20 performance ${$("depIcao").value || "----"}-${$("arrIcao").value || "----"}` +
+               ` ${new Date().toISOString().slice(0,10)}`;
   // mailto opens the mail app with it prefilled; nothing is sent until you send it
   location.href = `mailto:?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(summaryText())}`;
 });
 $("sumPrint").addEventListener("click", () => window.print());
-for (const id of ["fuMix","fuAlt","fuBhp","fuRpm"])
-  $(id).addEventListener("change", () => { fuelBands(); renderFuel(); save(); });
 
 /* Which shared panels belong to a tab. Fuel, W&B and Reference stand alone —
    the aerodrome panels and the factoring basis have nothing to do with them. */
@@ -2243,20 +1539,16 @@ $("mixSeg").addEventListener("click", e => {
   renderCruise(); save();
 });
 for (const x of $("regSeg").children) x.setAttribute("aria-pressed", x.dataset.r === basis);
-for (const x of $("resSeg").children) x.setAttribute("aria-pressed", +x.dataset.r === resMin);
 for (const x of $("mixSeg").children) x.setAttribute("aria-pressed", x.dataset.m === mix);
 
-try { WINDS = JSON.parse(localStorage.getItem("tb20.winds") || "null"); } catch(e){}
 syncDeclaredFields();
-syncRoute(false);   // restore the route without overwriting edited distances
-fuelBands();
 renderRef();
 renderAll();
 save();   // persist the one-time basis migration
 
 /* Version stamp — so you can tell which build is on the iPad. */
 document.querySelector("header .warnbar").insertAdjacentHTML("afterend",
-  `<div class="ver">build 2026.08.19.1157 · <span id="swState">standalone</span></div>`);
+  `<div class="ver">build 2026.08.25.0943 · <span id="swState">standalone</span></div>`);
 
 /* Register the service worker so offline is deterministic instead of relying
    on the browser's cache heuristics. Only meaningful over https from a real

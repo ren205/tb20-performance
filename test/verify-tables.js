@@ -1,4 +1,10 @@
 const C = require('./verify_core.js');
+
+/* Independent ICAO-atmosphere implementation, deliberately NOT imported from
+   the app: this cross-checks the transcribed CAS and TAS columns against
+   physics, so it must not share code with whatever produced them. */
+const tasFrom = (cas, paFt, oatC) =>
+  cas / Math.sqrt(Math.pow(1 - 6.87535e-6 * paFt, 5.25588) / ((oatC + 273.15) / 288.15));
 let pass=0, fail=0; const fails=[];
 const ok=(name,cond,detail)=>{ if(cond){pass++;} else {fail++; fails.push(name+(detail?"  ["+detail+"]":""));} };
 const near=(a,b,tol)=>Math.abs(a-b)<=tol;
@@ -70,7 +76,7 @@ for (const mix of ["bestPower","bestEconomy"])
   for (const alt of Object.keys(C.CRUISE[mix]).map(Number))
     for (const bhp of Object.keys(C.CRUISE[mix][alt]).map(Number)){
       const s=C.CRUISE[mix][alt][bhp];
-      const calc=C.tasFrom(s.cas, alt, C.isaTemp(alt));
+      const calc=tasFrom(s.cas, alt, C.isaTemp(alt));
       const err=Math.abs(calc-s.tas);
       if (err>worst){worst=err; worstAt=`${mix} ${alt}ft ${bhp}% CAS${s.cas} TAS${s.tas} calc${calc.toFixed(1)}`;}
       ok(`${mix} ${alt} ${bhp}% TAS physics`, err<=1.6, `calc ${calc.toFixed(1)} vs table ${s.tas}`);
