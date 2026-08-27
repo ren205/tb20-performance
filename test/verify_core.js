@@ -179,6 +179,15 @@ function slopeUp(r, n){
   const s = (far - near) / r[2] * 100;
   return Math.abs(s) > 5 ? null : s;        // implausible, treat as unknown
 }
-module.exports = { PA_TO,PA_CL,DISA,TAKEOFF,LANDING,ROC,CLIMB,CRUISE,TO_V,LD_V,CLB_V,CAL,ANT,
+/* F-GVLD weight and balance, mirroring src/logic.js */
+const WB = { empty:{kg:922.328, mm:980.97},
+             arms:{front:1155, rear:2035, baggage:2600, tks:2800, fuel:1085},
+             dens:{fuel:0.72, tks:1.09},
+             fwdLimit:[[1000,913],[1250,949],[1400,1071]], aftLimit:1205,
+             maxKg:{tow:1400, baggage:65, rearSeats:231}, fuelMaxL:326 };
+const fwdLimitAt = kg => interp(clamp(kg, WB.fwdLimit[0][0], WB.fwdLimit[2][0]),
+                                WB.fwdLimit.map(p=>p[0]), WB.fwdLimit.map(p=>p[1]));
+
+module.exports = { WB, fwdLimitAt, PA_TO,PA_CL,DISA,TAKEOFF,LANDING,ROC,CLIMB,CRUISE,TO_V,LD_V,CLB_V,CAL,ANT,
   W_KEYS,W_KG,MTOW_KG,XW_DEMO,interp,lookup3,clamp,isaTemp,fmt,M_PER_FT,FT_PER_M,LB_PER_KG,toM,
   qfuOf,vaAt,glideNM,cruiseAt,slopeUp };

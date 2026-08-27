@@ -5,7 +5,8 @@
 </header>
 
 <nav id="tabs">
-  <button aria-selected="true" data-t="to">Take-off</button>
+  <button aria-selected="true" data-t="wb">W &amp; B</button>
+  <button data-t="to">Take-off</button>
   <button data-t="clb">Climb</button>
   <button data-t="crz">Cruise</button>
   <button data-t="ldg">Landing</button>
@@ -139,6 +140,57 @@
     </div>
     <div id="regNote"></div>
   </div>
+
+  <!-- ===================== WEIGHT & BALANCE ===================== -->
+  <section id="wb">
+    <div class="card">
+      <h2>Aircraft — F-GVLD</h2>
+      <div class="grid">
+        <div><label>Empty mass (kg)</label><input id="wbEW" type="number" inputmode="decimal" step="0.01" value="922.33"></div>
+        <div><label>Empty arm (mm)</label><input id="wbEA" type="number" inputmode="decimal" step="0.01" value="980.97"></div>
+      </div>
+      <div id="wbAcInfo"></div>
+    </div>
+
+    <div class="card">
+      <h2>Load</h2>
+      <div class="grid">
+        <div><label>Pilot (kg)</label><input id="wbP" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Front passenger (kg)</label><input id="wbFP" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Rear seats (kg)</label><input id="wbR" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Baggage (kg)</label><input id="wbB" type="number" inputmode="decimal" value="0"></div>
+        <div><label>TKS fluid (L)</label><input id="wbTKS" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Fuel at start (L)</label><input id="wbF1" type="number" inputmode="decimal" value="0"></div>
+        <div><label>Fuel at end (L)</label><input id="wbF2" type="number" inputmode="decimal" value="0"></div>
+      </div>
+      <div id="wbLoadFlags"></div>
+    </div>
+
+    <div class="card">
+      <h2>Result</h2>
+      <div class="out">
+        <div class="big"><div class="lbl">Mass with fuel at start</div><div class="val" id="wbM1">—</div></div>
+        <div class="big"><div class="lbl">CG with fuel at start</div><div class="val" id="wbC1">—</div></div>
+        <div class="big"><div class="lbl">Mass with fuel at end</div><div class="val" id="wbM2">—</div></div>
+        <div class="big"><div class="lbl">CG with fuel at end</div><div class="val" id="wbC2">—</div></div>
+      </div>
+      <div id="wbFlags"></div>
+      <div class="scroll" style="margin-top:12px"><table id="wbTable"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Envelope</h2>
+      <div id="wbChart"></div>
+      <div class="note" style="margin-top:8px">Datum is the <b>front face of the firewall</b>. Forward limit runs
+      913 mm at 1000 kg, 949 mm at 1250 kg, 1071 mm at 1400 kg; aft limit 1205 mm at all masses. Maximum mass
+      1400 kg. ● fuel at start, ○ fuel at end.</div>
+    </div>
+
+    <div class="card"><h2>Stations and sources</h2>
+      <div class="scroll"><table id="wbRef"></table></div>
+      <div id="wbSrc" class="note" style="margin-top:10px"></div>
+    </div>
+  </section>
 
   <!-- ===================== TAKE-OFF ===================== -->
   <section id="to">

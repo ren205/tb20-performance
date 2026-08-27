@@ -761,6 +761,164 @@ function renderSummary(){
       overflow-x:auto">${txt.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}</pre>`;
 }
 
+
+/* ==================================================================
+ * Weight and balance — F-GVLD, TB20 serial 1088
+ *
+ * Empty mass and arm come from the RMA weighing report (Rennes), corrected
+ * for the CGR-30P avionics change:
+ *
+ *   weighed              947.000 kg   nose 219, left 372, right 356
+ *   CG from the wheels   X = d - p1*D/M = 1.465 - 0.4417 = 1.0233 m
+ *   less TKS aboard      -22.672 kg at 2.769 m   (20.8 L at density 1.09)
+ *   corrected empty      924.328 kg at 0.980 m,  moment 906.2862 m.kg
+ *   avionics change      -2.000 kg, moment -1.5065 m.kg
+ *   -------------------------------------------------------------
+ *   current empty        922.328 kg at 0.98097 m, moment 904.7797 m.kg
+ *
+ * The weighing removed the TKS fluid, so it is NOT in the empty mass and has
+ * to be loaded as its own station whenever it is aboard.
+ *
+ * Station arms are the weighing report's own figures. They agree with POH
+ * Figure 6.3 to within about 3 mm (the POH gives 45.38 in = 1152.7 mm for the
+ * front seats where the report rounds to 1155); the report is used because it
+ * is the controlling document for this airframe.
+ *
+ * CG limits are POH 2.9 and match the envelope drawn on the weighing report.
+ * ================================================================== */
+const WB = {
+  reg:   "F-GVLD",
+  serial:"1088",
+  empty: { kg: 922.328, mm: 980.97 },
+  arms:  { front:1155, rear:2035, baggage:2600, tks:2800, fuel:1085 },
+  dens:  { fuel:0.72, tks:1.09 },
+  fwdLimit: [[1000,913],[1250,949],[1400,1071]],
+  aftLimit: 1205,
+  maxKg: { tow:1400, baggage:65, rearSeats:231 },
+  fuelMaxL: 326
+};
+const fwdLimitAt = kg => interp(clamp(kg, WB.fwdLimit[0][0], WB.fwdLimit[2][0]),
+                                WB.fwdLimit.map(p=>p[0]), WB.fwdLimit.map(p=>p[1]));
+
+function wbItems(fuelL){
+  return [
+    { n:"Empty aircraft",  kg:num("wbEW"),                        mm:num("wbEA") },
+    { n:"Pilot",           kg:num("wbP"),                         mm:WB.arms.front },
+    { n:"Front passenger", kg:num("wbFP"),                        mm:WB.arms.front },
+    { n:"Rear seats",      kg:num("wbR"),                         mm:WB.arms.rear },
+    { n:"Baggage",         kg:num("wbB"),                         mm:WB.arms.baggage },
+    { n:`TKS ${fmt(num("wbTKS"))} L`, kg:num("wbTKS")*WB.dens.tks, mm:WB.arms.tks },
+    { n:`Fuel ${fmt(fuelL)} L`, kg:fuelL*WB.dens.fuel,            mm:WB.arms.fuel }
+  ];
+}
+const wbTotals = items => {
+  const kg  = items.reduce((s,i)=>s+i.kg, 0);
+  const mom = items.reduce((s,i)=>s+i.kg*i.mm, 0);
+  return { kg, mom, cg: kg ? mom/kg : 0 };
+};
+
+function renderWB(){
+  const f1 = num("wbF1"), f2 = num("wbF2");
+  const a = wbTotals(wbItems(f1)), b = wbTotals(wbItems(f2));
+
+  $("wbM1").innerHTML = fmt(a.kg,1) + ` <small>kg</small>`;
+  $("wbC1").innerHTML = fmt(a.cg,0) + ` <small>mm</small>`;
+  $("wbM2").innerHTML = fmt(b.kg,1) + ` <small>kg</small>`;
+  $("wbC2").innerHTML = fmt(b.cg,0) + ` <small>mm</small>`;
+
+  // itemised, with the fuel row shown at both states
+  const its = wbItems(f1);
+  let h = `<tr><th>Item</th><th>Mass kg</th><th>Arm mm</th><th>Moment kg·m</th></tr>`;
+  for (const i of its) if (i.kg)
+    h += `<tr><td>${i.n}</td><td>${fmt(i.kg,1)}</td><td>${fmt(i.mm,0)}</td><td>${fmt(i.kg*i.mm/1000,1)}</td></tr>`;
+  h += `<tr class="rec"><td><b>With fuel at start</b></td><td><b>${fmt(a.kg,1)}</b></td>` +
+       `<td><b>${fmt(a.cg,0)}</b></td><td><b>${fmt(a.mom/1000,1)}</b></td></tr>`;
+  h += `<tr><td>Fuel at end ${fmt(f2)} L</td><td>${fmt(f2*WB.dens.fuel,1)}</td>` +
+       `<td>${WB.arms.fuel}</td><td>${fmt(f2*WB.dens.fuel*WB.arms.fuel/1000,1)}</td></tr>`;
+  h += `<tr class="rec"><td><b>With fuel at end</b></td><td><b>${fmt(b.kg,1)}</b></td>` +
+       `<td><b>${fmt(b.cg,0)}</b></td><td><b>${fmt(b.mom/1000,1)}</b></td></tr>`;
+  $("wbTable").innerHTML = h;
+
+  // load limits
+  let lf = "";
+  if (num("wbB") > WB.maxKg.baggage) lf += flag("bad","Baggage over limit",
+      `${fmt(num("wbB"),1)} kg exceeds the ${WB.maxKg.baggage} kg compartment limit.`);
+  if (num("wbR") > WB.maxKg.rearSeats) lf += flag("bad","Rear seats over limit",
+      `${fmt(num("wbR"),1)} kg exceeds the ${WB.maxKg.rearSeats} kg maximum on the rear seats.`);
+  if (f1 > WB.fuelMaxL) lf += flag("warn","More than usable fuel",
+      `${fmt(f1)} L exceeds the ${WB.fuelMaxL} L usable.`);
+  if (f2 > f1) lf += flag("warn","Fuel at end exceeds fuel at start",
+      "Check the two figures — the aeroplane does not gain fuel in flight.");
+  $("wbLoadFlags").innerHTML = lf;
+
+  // envelope verdicts
+  const verdict = (t, when) => {
+    if (!t.kg) return "";
+    const lo = fwdLimitAt(t.kg);
+    if (t.kg > WB.maxKg.tow) return flag("bad",`Over maximum mass ${when}`,
+      `${fmt(t.kg,1)} kg exceeds ${WB.maxKg.tow} kg by ${fmt(t.kg-WB.maxKg.tow,1)} kg.`);
+    if (t.cg < lo) return flag("bad",`CG forward of limit ${when}`,
+      `${fmt(t.cg,0)} mm against a ${fmt(lo,0)} mm forward limit at ${fmt(t.kg,1)} kg.`);
+    if (t.cg > WB.aftLimit) return flag("bad",`CG aft of limit ${when}`,
+      `${fmt(t.cg,0)} mm against the ${WB.aftLimit} mm aft limit.`);
+    return flag("ok",`Within envelope ${when}`,
+      `CG ${fmt(t.cg,0)} mm, limits ${fmt(lo,0)}–${WB.aftLimit} mm at ${fmt(t.kg,1)} kg.`);
+  };
+  $("wbFlags").innerHTML = verdict(a,"with fuel at start") + verdict(b,"with fuel at end");
+
+  drawEnvelope(a, b);
+
+  $("wbAcInfo").innerHTML = `<div class="adinfo"><b>${WB.reg}</b> · TB20 serial ${WB.serial} ·
+    empty ${fmt(WB.empty.kg,1)} kg at ${fmt(WB.empty.mm,1)} mm, moment
+    ${fmt(WB.empty.kg*WB.empty.mm/1000,1)} kg·m<br>
+    From the RMA weighing report, corrected for the CGR-30P avionics change
+    (−2.00 kg, −1.51 kg·m). <b>The weighing drained the TKS</b>, so TKS fluid is a separate
+    station below whenever it is aboard.</div>`;
+
+  $("wbRef").innerHTML = `<tr><th>Station</th><th>Arm mm</th><th>Limit</th><th>Source</th></tr>` +
+    [["Front seats", WB.arms.front, "—"],
+     ["Rear seats",  WB.arms.rear,  WB.maxKg.rearSeats+" kg"],
+     ["Baggage",     WB.arms.baggage, WB.maxKg.baggage+" kg"],
+     ["TKS fluid",   WB.arms.tks,   "1.09 kg/L"],
+     ["Fuel",        WB.arms.fuel,  WB.fuelMaxL+" L usable, 0.72 kg/L"]]
+    .map(([n,mm,lim]) => `<tr><td>${n}</td><td>${mm}</td><td>${lim}</td>` +
+      `<td><span class="src">weighing report</span></td></tr>`).join("") +
+    `<tr><td>Maximum mass</td><td>—</td><td>${WB.maxKg.tow} kg</td><td><span class="src">POH 2.9</span></td></tr>` +
+    `<tr><td>CG forward limit</td><td colspan="2">913 mm @1000 kg · 949 @1250 · 1071 @1400</td>` +
+      `<td><span class="src">POH 2.9</span></td></tr>` +
+    `<tr><td>CG aft limit</td><td colspan="2">1205 mm, all masses</td><td><span class="src">POH 2.9</span></td></tr>`;
+
+  $("wbSrc").innerHTML =
+    `Arms are the weighing report's own figures; they agree with POH Figure 6.3 to about 3 mm. ` +
+    `Oil is included in the empty mass. Replace the empty mass and arm above if the aircraft is ` +
+    `reweighed or its equipment changes again.`;
+}
+
+function drawEnvelope(a, b){
+  const W=560, H=380, L=52, R=14, T=14, Bm=40;
+  const x0=880, x1=1250, y0=850, y1=1450;
+  const X = v => L + (v-x0)/(x1-x0)*(W-L-R);
+  const Y = v => T + (1-(v-y0)/(y1-y0))*(H-T-Bm);
+  const env = [[1000,913],[1250,949],[1400,1071],[1400,1205],[1000,1205]];
+  const poly = [[y0,913],...env,[y0,1205]].map(([w,c])=>`${X(c)},${Y(w)}`).join(" ");
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight and balance envelope">`;
+  g += `<polygon points="${poly}" fill="rgba(88,166,255,.13)" stroke="#58a6ff" stroke-width="2"/>`;
+  for (let c=900; c<=1250; c+=50) g +=
+    `<line x1="${X(c)}" y1="${Y(y0)}" x2="${X(c)}" y2="${Y(y1)}" stroke="#2d3540" stroke-width="1"/>
+     <text x="${X(c)}" y="${H-Bm+18}" fill="#8b949e" font-size="11" text-anchor="middle">${c}</text>`;
+  for (let w=900; w<=1400; w+=100) g +=
+    `<line x1="${X(x0)}" y1="${Y(w)}" x2="${X(x1)}" y2="${Y(w)}" stroke="#2d3540" stroke-width="1"/>
+     <text x="${L-8}" y="${Y(w)+4}" fill="#8b949e" font-size="11" text-anchor="end">${w}</text>`;
+  g += `<text x="${(L+W-R)/2}" y="${H-6}" fill="#8b949e" font-size="11" text-anchor="middle">CG — mm aft of firewall</text>`;
+  g += `<text x="14" y="${T+10}" fill="#8b949e" font-size="11">kg</text>`;
+  const inside = t => t.kg && t.cg>=fwdLimitAt(t.kg) && t.cg<=WB.aftLimit && t.kg<=WB.maxKg.tow;
+  if (a.kg && b.kg) g += `<line x1="${X(a.cg)}" y1="${Y(a.kg)}" x2="${X(b.cg)}" y2="${Y(b.kg)}"
+      stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  if (b.kg) g += `<circle cx="${X(b.cg)}" cy="${Y(b.kg)}" r="6" fill="none" stroke="${inside(b)?"#e6edf3":"#f85149"}" stroke-width="2"/>`;
+  if (a.kg) g += `<circle cx="${X(a.cg)}" cy="${Y(a.kg)}" r="7" fill="${inside(a)?"#3fb950":"#f85149"}" stroke="#0d1117" stroke-width="2"/>`;
+  $("wbChart").innerHTML = g + `</svg>`;
+}
+
 /* ---------------------------- shell ---------------------------- */
 function renderRef(){
   $("vTable").innerHTML = `<tr><th>Speed</th><th></th><th>KCAS</th><th>KIAS</th><th>Remarks</th></tr>` +
@@ -820,13 +978,14 @@ function renderAll(){
   renderConditions(dep, DEP_IDS, "condFlags", false);
   renderConditions(arr, ARR_IDS, "aCondFlags", true);
   renderTakeoff(dep); renderLanding(arr); renderClimb(dep); renderCruise();
-  renderRefLive(dep); bestRunway("dep"); bestRunway("arr"); renderSummary();
+  renderRefLive(dep); bestRunway("dep"); bestRunway("arr"); renderWB(); renderSummary();
   // aerodrome identifiers on the result headings
   $("toHead").textContent = dep.icao ? `Take-off distance — ${dep.icao}` : "Take-off distance";
   $("ldHead").textContent = arr.icao ? `Landing distance — ${arr.icao}` : "Landing distance";
 }
 
-const FIELDS = ["depIcao","elev","qnh","oat","wt","rwy","wdir","wspd","wref","varn","slope","surf","tora","toda","asda",
+const FIELDS = ["wbEW","wbEA","wbP","wbFP","wbR","wbB","wbTKS","wbF1","wbF2",
+                "depIcao","elev","qnh","oat","wt","rwy","wdir","wspd","wref","varn","slope","surf","tora","toda","asda",
                 "arrIcao","aElev","aQnh","aOat","aWt","aRwy","aWdir","aWspd","aWref","aVarn","aSlope","aSurf","lda",
                 "depMetar","arrMetar","depRwy","arrRwy","depTime","arrTime",
                 "glAlt",

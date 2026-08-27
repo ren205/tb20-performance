@@ -123,7 +123,50 @@ ok("102.36 in = 2.600 m baggage arm", near(102.36*25.4,2600,1.0));
 ok("74.80 in = 1.900 m cargo arm", near(74.80*25.4,1900,1.0));
 ok("1 NM = 6076.12 ft", near(1852/0.3048,6076.12,0.2));
 
-H("9. Speeds and glide");
+H("9. Weight and balance — F-GVLD");
+{
+  // the weighing report reconciles from the wheel readings
+  const wheels = 372+356+219;
+  ok("wheel readings sum to the weighed mass", wheels===947, String(wheels));
+  const D2 = 219*1.91/wheels, X = 1.465 - D2;
+  ok("CG from the wheels matches the report", near(X,1.023299894,1e-6), X.toFixed(6));
+  ok("TKS correction is 20.8 L at 1.09", near(20.8*1.09,22.672,0.001));
+  const emptyKg = wheels-22.672, emptyMom = wheels*X-62.778768;
+  ok("corrected empty mass matches the report", near(emptyKg,924.328,0.001), emptyKg.toFixed(3));
+  ok("corrected empty arm matches the report", near(emptyMom/emptyKg,0.980,0.001), (emptyMom/emptyKg).toFixed(4));
+  // avionics change
+  const rm=[[1.20,.63],[.20,.63],[.10,.63],[.10,.63],[.20,.63],[.60,.63],[.70,.63]];
+  const inst=[[.55,.63],[.45,.20],[.10,.10]];
+  const sum=(a,f)=>a.reduce((s,x)=>s+f(x),0);
+  ok("removed mass totals 3.10 kg", near(sum(rm,x=>x[0]),3.10,0.001));
+  ok("installed mass totals 1.10 kg", near(sum(inst,x=>x[0]),1.10,0.001));
+  const dM = sum(inst,x=>x[0])-sum(rm,x=>x[0]);
+  const dMom = sum(inst,x=>x[0]*x[1])-sum(rm,x=>x[0]*x[1]);
+  ok("net change is -2.00 kg", near(dM,-2.00,0.001), dM.toFixed(2));
+  ok("net moment change is -1.51 kg.m", near(dMom,-1.5065,0.001), dMom.toFixed(4));
+  ok("current empty mass", near(924.328+dM, C.WB.empty.kg, 0.001), (924.328+dM).toFixed(3));
+  ok("current empty arm", near((emptyMom+dMom)/(emptyKg+dM)*1000, C.WB.empty.mm, 0.02),
+     ((emptyMom+dMom)/(emptyKg+dM)*1000).toFixed(2));
+  // envelope
+  ok("forward limit at 1000 kg", near(C.fwdLimitAt(1000),913,1e-9));
+  ok("forward limit at 1250 kg", near(C.fwdLimitAt(1250),949,1e-9));
+  ok("forward limit at 1400 kg", near(C.fwdLimitAt(1400),1071,1e-9));
+  ok("forward limit below 1000 kg holds at 913", near(C.fwdLimitAt(800),913,1e-9));
+  ok("forward limit interpolates at 1325 kg", near(C.fwdLimitAt(1325),(949+1071)/2,1e-9));
+  ok("aft limit is 1205 mm", C.WB.aftLimit===1205);
+  // burning fuel moves the CG away from the tanks
+  const cg=(items)=>items.reduce((s,i)=>s+i[0]*i[1],0)/items.reduce((s,i)=>s+i[0],0);
+  const base=[[C.WB.empty.kg,C.WB.empty.mm],[85,1155],[75,1155]];
+  const withFuel=(L)=>cg(base.concat([[L*0.72,1085]]));
+  ok("CG forward of the tanks moves forward as fuel burns", withFuel(60) < withFuel(200),
+     withFuel(200).toFixed(0)+" -> "+withFuel(60).toFixed(0));
+  const aft=[[C.WB.empty.kg,C.WB.empty.mm],[85,1155],[200,2035]];
+  const aftFuel=(L)=>cg(aft.concat([[L*0.72,1085]]));
+  ok("CG aft of the tanks moves aft as fuel burns", aftFuel(60) > aftFuel(200),
+     aftFuel(200).toFixed(0)+" -> "+aftFuel(60).toFixed(0));
+}
+
+H("10. Speeds and glide");
 ok("Va at max mass is the placarded 129 KIAS", near(C.vaAt(1400),129,0.01));
 ok("Va falls with mass (1000 kg)", near(C.vaAt(1000),129*Math.sqrt(1000/1400),0.01), C.vaAt(1000).toFixed(1));
 ok("Va never exceeds the placarded value", C.vaAt(1500)<=129.001);

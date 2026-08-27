@@ -7,9 +7,10 @@ A single self-contained HTML page that computes **take-off, climb, cruise and
 landing performance** for the SOCATA TB20, from the tables in the aircraft's
 Pilot's Information Manual.
 
-Fuel planning and weight & balance are deliberately **not** here — those live in
-SkyDemon and ForeFlight. This does the one thing they cannot: POH runway
-performance with the regulatory factoring applied and shown.
+Fuel planning is deliberately **not** here — that lives in SkyDemon and
+ForeFlight. This does what they cannot: POH runway performance with the
+regulatory factoring applied and shown, plus a standalone weight and balance
+for the actual airframe.
 
 **`TB20-Performance.html` is the tool.** Open it in any browser. It makes no
 network requests of any kind — no fonts, no scripts, no analytics — so it works
@@ -39,6 +40,7 @@ against the paper manual before flying them.**
 
 | Tab | Source |
 |---|---|
+| W & B | F-GVLD weighing report, CG limits POH 2.9 |
 | Take-off | POH 5.8–5.9 (Fig 5.6 / 5.7) |
 | Climb | POH 5.10–5.13 (Fig 5.8–5.11) |
 | Cruise | POH 5.16–5.29 (Fig 5.13–5.26), both mixtures, 7 altitudes |
@@ -53,6 +55,39 @@ Interpolation is linear on weight, pressure altitude and ISA deviation. Every
 tabulated corner reproduces the POH exactly. Beyond the tables, temperature and
 pressure altitude **extrapolate rather than clamp** — clamping would under-read
 distance on a hot or high day — and the app flags loudly when it does so.
+
+## Weight and balance
+
+A standalone tab for **F-GVLD** (TB20 serial 1088), independent of the
+performance tabs. Enter the load and two fuel quantities in litres — at start
+and at end — and it gives mass and CG for both states, with the envelope.
+
+Empty mass and arm are the aircraft's own, reconciled from its paperwork:
+
+| | |
+|---|---|
+| Weighed | 947.000 kg (nose 219, left 372, right 356) |
+| CG from the wheels | X = d − p₁D/M = 1.465 − 0.4417 = **1.0233 m** |
+| Less TKS aboard | −22.672 kg at 2.769 m (20.8 L at 1.09) |
+| Corrected empty | 924.328 kg at 0.980 m |
+| CGR-30P avionics change | −2.000 kg, −1.5065 kg·m |
+| **Current empty** | **922.328 kg at 980.97 mm** |
+
+Every one of those reproduces the weighing report exactly, and the arithmetic is
+checked in the test suite.
+
+**The weighing drained the TKS**, so TKS fluid is not in the empty mass and is
+loaded as its own station (2800 mm, 1.09 kg/L) whenever it is aboard.
+
+Station arms are the weighing report's own figures; they agree with POH
+Figure 6.3 to about 3 mm. Fuel is taken at 0.72 kg/L — the report's example
+worked at 0.721, a difference of 0.2 kg on a full load.
+
+**Note on the tanks.** They sit at 1085 mm, which is usually *aft* of the loaded
+CG, so burning fuel moves the CG **forward** — toward the forward limit, not away
+from it. With a heavy rear load the CG can sit aft of the tanks and the effect
+reverses. Both directions are checked in the tests, and the tab shows the CG at
+both fuel states so the direction is visible rather than assumed.
 
 ## Factoring bases
 
@@ -132,7 +167,7 @@ shows its age but does **not** re-apply, so hand-edited values survive.
 ## Units and conventions
 
 - Altitudes and elevations in **feet**; runway distances in **metres**;
-  masses in **kg**.
+  masses in **kg**; CG and arms in **mm**.
 - **QFU is magnetic.** METAR/TAF winds are true, ATIS/tower winds are magnetic,
   so each aerodrome carries a wind-reference selector and a magnetic variation
   field (east-positive). A true wind is converted before being resolved against
@@ -168,7 +203,7 @@ every tab, so a single print gives one paper copy of the whole plan.
 ## Verification
 
     node test/verify-tables.js     # 1040 checks
-    node test/verify-logic.js      #   36 checks
+    node test/verify-logic.js      #   55 checks
 
 `test/verify_core.js` is the app's own data and pure functions with the DOM
 stripped out, so the tests exercise the shipping code rather than a copy.
@@ -189,6 +224,9 @@ What is checked:
 - **Conservative extrapolation** beyond the tables, and clamping below the
   lightest tabulated mass.
 - **Units, atmosphere and true airspeed**, including the pressure-level mapping.
+- **Weight and balance** — the weighing report reconciled from its wheel
+  readings, the avionics change, the CG envelope, and the direction the CG moves
+  as fuel burns on either side of the tanks.
 - **Speeds and glide**, including V<sub>A</sub> scaling with mass.
 
 The correction factors are verified in the browser, since they depend on the
