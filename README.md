@@ -62,6 +62,11 @@ A standalone tab for **F-GVLD** (TB20 serial 1088), independent of the
 performance tabs. Enter the load and two fuel quantities in litres — at start
 and at end — and it gives mass and CG for both states, with the envelope.
 
+Two buttons hand the results forward: *Use N kg as take-off mass* and *Use N kg
+as landing mass*, which fill the Departure and Arrival panels and switch to that
+tab. They name the figure they will copy, and they only act when tapped — the
+tabs stay uncoupled otherwise.
+
 Empty mass and arm are the aircraft's own, reconciled from its paperwork:
 
 | | |

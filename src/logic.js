@@ -817,6 +817,8 @@ const wbTotals = items => {
   return { kg, mom, cg: kg ? mom/kg : 0 };
 };
 
+let WB_M1 = 0, WB_M2 = 0;
+
 function renderWB(){
   const f1 = num("wbF1"), f2 = num("wbF2");
   const a = wbTotals(wbItems(f1)), b = wbTotals(wbItems(f2));
@@ -834,7 +836,7 @@ function renderWB(){
   h += `<tr class="rec"><td><b>With fuel at start</b></td><td><b>${fmt(a.kg,1)}</b></td>` +
        `<td><b>${fmt(a.cg,0)}</b></td><td><b>${fmt(a.mom/1000,1)}</b></td></tr>`;
   h += `<tr><td>Fuel at end ${fmt(f2)} L</td><td>${fmt(f2*WB.dens.fuel,1)}</td>` +
-       `<td>${WB.arms.fuel}</td><td>${fmt(f2*WB.dens.fuel*WB.arms.fuel/1000,1)}</td></tr>`;
+       `<td>${fmt(WB.arms.fuel,0)}</td><td>${fmt(f2*WB.dens.fuel*WB.arms.fuel/1000,1)}</td></tr>`;
   h += `<tr class="rec"><td><b>With fuel at end</b></td><td><b>${fmt(b.kg,1)}</b></td>` +
        `<td><b>${fmt(b.cg,0)}</b></td><td><b>${fmt(b.mom/1000,1)}</b></td></tr>`;
   $("wbTable").innerHTML = h;
@@ -865,6 +867,12 @@ function renderWB(){
       `CG ${fmt(t.cg,0)} mm, limits ${fmt(lo,0)}–${WB.aftLimit} mm at ${fmt(t.kg,1)} kg.`);
   };
   $("wbFlags").innerHTML = verdict(a,"with fuel at start") + verdict(b,"with fuel at end");
+
+  WB_M1 = a.kg; WB_M2 = b.kg;
+  $("wbToDep").textContent = a.kg ? `Use ${fmt(a.kg,0)} kg as take-off mass` : "Use as take-off mass";
+  $("wbToArr").textContent = b.kg ? `Use ${fmt(b.kg,0)} kg as landing mass`  : "Use as landing mass";
+  $("wbToDep").disabled = !a.kg;
+  $("wbToArr").disabled = !b.kg;
 
   drawEnvelope(a, b);
 
@@ -1020,6 +1028,21 @@ for (const k of FIELDS)
     $(k).addEventListener("input", () => { renderAll(); save(); });
 $("depMetar").addEventListener("input", () => applyMetar("dep", true));
 $("arrMetar").addEventListener("input", () => applyMetar("arr", true));
+/* Explicit hand-off. The W&B tab stays independent; these only move a number
+   when tapped, so nothing couples the tabs behind your back. */
+$("wbToDep").addEventListener("click", () => {
+  if (!WB_M1) return;
+  $("wt").value = Math.round(WB_M1);
+  document.querySelector('#tabs button[data-t=to]').click();
+  renderAll(); save();
+});
+$("wbToArr").addEventListener("click", () => {
+  if (!WB_M2) return;
+  $("aWt").value = Math.round(WB_M2);
+  document.querySelector('#tabs button[data-t=ldg]').click();
+  renderAll(); save();
+});
+
 $("depIcao").addEventListener("input", () => { syncAerodrome("dep"); renderAll(); save(); });
 $("arrIcao").addEventListener("input", () => { syncAerodrome("arr"); renderAll(); save(); });
 $("depRwy").addEventListener("change", () => applyRunway("dep"));
