@@ -74,6 +74,26 @@ The QRH is the default because temperature matters: at 5000 ft the 55% setting
 gives TAS 133 kt at ISA−20 and 138 kt at ISA+20, a spread the POH table simply
 does not carry.
 
+## Climb gradient
+
+The Climb tab gives the gradient two ways:
+
+- **Still air** — rate of climb against TAS. The aeroplane's own capability,
+  independent of wind.
+- **Over the ground** — against ground speed, using the wind from the Departure
+  panel. A published departure gradient is measured over the ground, so a
+  headwind helps and a tailwind hurts; a tailwind is called out explicitly.
+
+Both are shown as a percentage with ft/NM alongside (1% = 60.76 ft/NM).
+
+TAS comes from the ICAO standard atmosphere, `TAS = CAS / √σ`, rather than the
+common 2% per 1000 ft rule of thumb. The rule overstates TAS — 104.5 kt against
+102.3 kt at 5000 ft — and so *under-reads* the gradient. The same formula
+reproduces the POH cruise tables exactly at ISA, which is how it is checked.
+
+Surface wind is not the wind at altitude, so the ground figure is indicative
+once you are climbing away.
+
 ## Weight and balance
 
 A standalone tab for **F-GVLD** (TB20 serial 1088), independent of the
@@ -226,7 +246,7 @@ every tab, so a single print gives one paper copy of the whole plan.
 ## Verification
 
     node test/verify-tables.js     # 1285 checks
-    node test/verify-logic.js      #   55 checks
+    node test/verify-logic.js      #   66 checks
 
 `test/verify_core.js` is the app's own data and pure functions with the DOM
 stripped out, so the tests exercise the shipping code rather than a copy.

@@ -26,3 +26,13 @@ const fmt = (v,d=0) => Number.isFinite(v) ? v.toLocaleString("en-GB",{minimumFra
 const M_PER_FT = 0.3048, FT_PER_M = 1/M_PER_FT, LB_PER_KG = 2.2046226218;
 const toM = ft => ft*M_PER_FT;
 const dist = ft => `${fmt(toM(ft))} <small>m / ${fmt(ft)} ft</small>`;
+const deg3 = d => String(Math.round(d) % 360).padStart(3, "0");
+
+/* ICAO standard atmosphere: pressure ratio, and TAS from CAS at a pressure
+   altitude and an actual temperature. Checked against the POH cruise tables —
+   CAS 134 kt at 6500 ft in ISA returns 148 kt, the manual's tabulated TAS. */
+const deltaP = paFt => Math.pow(1 - 6.87535e-6 * paFt, 5.25588);
+const tasFrom = (cas, paFt, oatC) =>
+  cas / Math.sqrt(deltaP(paFt) / ((oatC + 273.15) / 288.15));
+const KT_FPM = 101.269;      // ft/min per knot
+const FT_NM  = 6076.115;

@@ -221,6 +221,10 @@ const WB = { empty:{kg:922.328, mm:980.97},
 const fwdLimitAt = kg => interp(clamp(kg, WB.fwdLimit[0][0], WB.fwdLimit[2][0]),
                                 WB.fwdLimit.map(p=>p[0]), WB.fwdLimit.map(p=>p[1]));
 
-module.exports = { OMB, WB, fwdLimitAt, PA_TO,PA_CL,DISA,TAKEOFF,LANDING,ROC,CLIMB,CRUISE,TO_V,LD_V,CLB_V,CAL,ANT,
+const deltaP = paFt => Math.pow(1 - 6.87535e-6 * paFt, 5.25588);
+const tasFrom = (cas, paFt, oatC) => cas / Math.sqrt(deltaP(paFt) / ((oatC + 273.15) / 288.15));
+const KT_FPM = 101.269, FT_NM = 6076.115;
+
+module.exports = { OMB, WB, fwdLimitAt, deltaP, tasFrom, KT_FPM, FT_NM, PA_TO,PA_CL,DISA,TAKEOFF,LANDING,ROC,CLIMB,CRUISE,TO_V,LD_V,CLB_V,CAL,ANT,
   W_KEYS,W_KG,MTOW_KG,XW_DEMO,interp,lookup3,clamp,isaTemp,fmt,M_PER_FT,FT_PER_M,LB_PER_KG,toM,
   qfuOf,vaAt,glideNM,cruiseAt,slopeUp };

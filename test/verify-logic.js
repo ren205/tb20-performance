@@ -123,7 +123,30 @@ ok("102.36 in = 2.600 m baggage arm", near(102.36*25.4,2600,1.0));
 ok("74.80 in = 1.900 m cargo arm", near(74.80*25.4,1900,1.0));
 ok("1 NM = 6076.12 ft", near(1852/0.3048,6076.12,0.2));
 
-H("9. Weight and balance — F-GVLD");
+H("9. Atmosphere and climb gradient");
+ok("TAS equals CAS at sea level in ISA", near(C.tasFrom(100,0,15),100,0.01));
+ok("TAS exceeds CAS at altitude", C.tasFrom(95,5000,5.1) > 95);
+ok("POH cruise cross-check: CAS 134 at 6500 ISA gives TAS 148",
+   near(C.tasFrom(134,6500,C.isaTemp(6500)),148,1.0), C.tasFrom(134,6500,C.isaTemp(6500)).toFixed(1));
+ok("warmer air raises TAS for the same CAS", C.tasFrom(95,5000,25) > C.tasFrom(95,5000,0));
+ok("1 kt is 101.269 ft/min", near(C.KT_FPM, 1852/0.3048/60, 0.01));
+ok("1 NM is 6076.115 ft", near(C.FT_NM, 1852/0.3048, 0.01));
+{
+  // gradient identities
+  const roc=1131, tas=C.tasFrom(95,0,15);
+  const g = roc/(tas*C.KT_FPM);
+  ok("gradient % and ft/NM are the same quantity",
+     near(g*C.FT_NM, g*100/100*C.FT_NM, 1e-9));
+  ok("1% gradient is 60.76 ft/NM", near(0.01*C.FT_NM, 60.76, 0.01));
+  ok("headwind steepens the ground gradient", roc/((tas-10)*C.KT_FPM) > g);
+  ok("tailwind flattens the ground gradient", roc/((tas+10)*C.KT_FPM) < g);
+  // the old 2%/1000ft rule of thumb overstates TAS and so under-reads the gradient
+  const ruleTas = 95*(1+0.02*5000/1000), realTas = C.tasFrom(95,5000,C.isaTemp(5000));
+  ok("rule-of-thumb TAS overstates the real TAS at 5000 ft", ruleTas > realTas,
+     ruleTas.toFixed(1)+" vs "+realTas.toFixed(1));
+}
+
+H("10. Weight and balance — F-GVLD");
 {
   // the weighing report reconciles from the wheel readings
   const wheels = 372+356+219;
@@ -166,7 +189,7 @@ H("9. Weight and balance — F-GVLD");
      aftFuel(200).toFixed(0)+" -> "+aftFuel(60).toFixed(0));
 }
 
-H("10. Speeds and glide");
+H("11. Speeds and glide");
 ok("Va at max mass is the placarded 129 KIAS", near(C.vaAt(1400),129,0.01));
 ok("Va falls with mass (1000 kg)", near(C.vaAt(1000),129*Math.sqrt(1000/1400),0.01), C.vaAt(1000).toFixed(1));
 ok("Va never exceeds the placarded value", C.vaAt(1500)<=129.001);

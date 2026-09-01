@@ -303,10 +303,26 @@ function renderClimb(c){
   const v   = interp(c.w, W_KG, [CLB_V[2370], CLB_V[3086]]);
   $("roc").innerHTML  = fmt(roc) + ` <small>ft/min</small>`;
   $("clbV").innerHTML = fmt(v) + ` <small>KIAS</small>`;
-  $("clbG").innerHTML = fmt(roc / (v*(1+0.02*c.pa/1000) * 101.27) * 6076) + ` <small>ft/NM</small>`;
+  /* Gradient from the proper atmosphere rather than a 2%/1000 ft rule of
+     thumb, which overstates TAS and so under-reads the gradient. The POH
+     climb speed is an IAS; instrument error is assumed nil, and the airspeed
+     calibration table shows IAS and CAS agreeing closely in this range. */
+  const tas  = tasFrom(v, c.pa, c.oat);
+  const grad = roc / (tas * KT_FPM);                       // still air, a fraction
+  const gs   = tas - c.hw;                                 // headwind is positive
+  const gradG = gs > 5 ? roc / (gs * KT_FPM) : null;       // over the ground
+  $("clbG").innerHTML  = fmt(grad*100,1) + ` <small>% / ${fmt(grad*FT_NM)} ft/NM</small>`;
+  $("clbGG").innerHTML = gradG == null ? `—`
+    : fmt(gradG*100,1) + ` <small>% / ${fmt(gradG*FT_NM)} ft/NM</small>`;
   let f = rangeFlags(c, PA_CL);
   if (roc < 200) f += flag("bad","Very low rate of climb", `${fmt(roc)} ft/min at these conditions.`);
   else if (roc < 500) f += flag("warn","Low rate of climb", `${fmt(roc)} ft/min.`);
+  if (gradG != null && gradG < grad) f += flag("warn","Tailwind flattens the climb",
+      `${fmt(-c.hw,1)} kt tailwind takes the gradient over the ground from ` +
+      `${fmt(grad*100,1)}% to <b>${fmt(gradG*100,1)}%</b>. A departure gradient is measured over the ground.`);
+  if (gradG == null) f += flag("bad","Headwind exceeds the climb speed",
+      `A ${fmt(c.hw,0)} kt headwind against ${fmt(tas,0)} kt TAS leaves no forward progress, so no ` +
+      `ground gradient can be computed. Check the wind entry.`);
   $("clbFlags").innerHTML = f;
 
   const a = num("cFrom"), b = num("cTo");

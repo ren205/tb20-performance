@@ -343,11 +343,16 @@ svg{width:100%;height:auto;display:block}
       <div class="out">
         <div class="big hero"><div class="lbl">Rate of climb</div><div class="val" id="roc">—</div></div>
         <div class="big"><div class="lbl">Climb speed</div><div class="val" id="clbV">—</div></div>
-        <div class="big"><div class="lbl">Gradient</div><div class="val" id="clbG">—</div></div>
+        <div class="big"><div class="lbl">Gradient — still air</div><div class="val" id="clbG">—</div></div>
+        <div class="big"><div class="lbl">Gradient — over the ground</div><div class="val" id="clbGG">—</div></div>
       </div>
       <div id="clbFlags"></div>
       <div class="note" style="margin-top:10px">Gear up, flaps retracted, full rich, 2575 RPM full throttle.
-      Alternate air open: −150 ft/min. Not subject to the factoring basis — the POH climb table is used raw.</div>
+      Alternate air open: −150 ft/min. Not subject to the factoring basis — the POH climb table is used raw.<br><br>
+      <b>Still air</b> is the aeroplane's own capability, rate of climb against TAS. A published departure
+      gradient is measured against <b>ground</b> distance, so a headwind helps and a tailwind hurts — that is
+      the second figure, computed from the wind in the Departure panel. Surface wind is not the wind at
+      altitude, so treat it as indicative once you are climbing away.</div>
     </div>
     <div class="card">
       <h2>Climb — time, fuel &amp; distance</h2>
@@ -705,6 +710,16 @@ const fmt = (v,d=0) => Number.isFinite(v) ? v.toLocaleString("en-GB",{minimumFra
 const M_PER_FT = 0.3048, FT_PER_M = 1/M_PER_FT, LB_PER_KG = 2.2046226218;
 const toM = ft => ft*M_PER_FT;
 const dist = ft => `${fmt(toM(ft))} <small>m / ${fmt(ft)} ft</small>`;
+const deg3 = d => String(Math.round(d) % 360).padStart(3, "0");
+
+/* ICAO standard atmosphere: pressure ratio, and TAS from CAS at a pressure
+   altitude and an actual temperature. Checked against the POH cruise tables —
+   CAS 134 kt at 6500 ft in ISA returns 148 kt, the manual's tabulated TAS. */
+const deltaP = paFt => Math.pow(1 - 6.87535e-6 * paFt, 5.25588);
+const tasFrom = (cas, paFt, oatC) =>
+  cas / Math.sqrt(deltaP(paFt) / ((oatC + 273.15) / 288.15));
+const KT_FPM = 101.269;      // ft/min per knot
+const FT_NM  = 6076.115;
 
 /* ==================================================================
  * Factoring bases.
@@ -1010,10 +1025,26 @@ function renderClimb(c){
   const v   = interp(c.w, W_KG, [CLB_V[2370], CLB_V[3086]]);
   $("roc").innerHTML  = fmt(roc) + ` <small>ft/min</small>`;
   $("clbV").innerHTML = fmt(v) + ` <small>KIAS</small>`;
-  $("clbG").innerHTML = fmt(roc / (v*(1+0.02*c.pa/1000) * 101.27) * 6076) + ` <small>ft/NM</small>`;
+  /* Gradient from the proper atmosphere rather than a 2%/1000 ft rule of
+     thumb, which overstates TAS and so under-reads the gradient. The POH
+     climb speed is an IAS; instrument error is assumed nil, and the airspeed
+     calibration table shows IAS and CAS agreeing closely in this range. */
+  const tas  = tasFrom(v, c.pa, c.oat);
+  const grad = roc / (tas * KT_FPM);                       // still air, a fraction
+  const gs   = tas - c.hw;                                 // headwind is positive
+  const gradG = gs > 5 ? roc / (gs * KT_FPM) : null;       // over the ground
+  $("clbG").innerHTML  = fmt(grad*100,1) + ` <small>% / ${fmt(grad*FT_NM)} ft/NM</small>`;
+  $("clbGG").innerHTML = gradG == null ? `—`
+    : fmt(gradG*100,1) + ` <small>% / ${fmt(gradG*FT_NM)} ft/NM</small>`;
   let f = rangeFlags(c, PA_CL);
   if (roc < 200) f += flag("bad","Very low rate of climb", `${fmt(roc)} ft/min at these conditions.`);
   else if (roc < 500) f += flag("warn","Low rate of climb", `${fmt(roc)} ft/min.`);
+  if (gradG != null && gradG < grad) f += flag("warn","Tailwind flattens the climb",
+      `${fmt(-c.hw,1)} kt tailwind takes the gradient over the ground from ` +
+      `${fmt(grad*100,1)}% to <b>${fmt(gradG*100,1)}%</b>. A departure gradient is measured over the ground.`);
+  if (gradG == null) f += flag("bad","Headwind exceeds the climb speed",
+      `A ${fmt(c.hw,0)} kt headwind against ${fmt(tas,0)} kt TAS leaves no forward progress, so no ` +
+      `ground gradient can be computed. Check the wind entry.`);
   $("clbFlags").innerHTML = f;
 
   const a = num("cFrom"), b = num("cTo");
@@ -1494,7 +1525,7 @@ function bestRunway(which){
 
 /* Captured by the take-off and landing renderers for the summary. */
 let TO_ROLL = 0, TO_50 = 0, TO_VLO = 0, TO_V50 = 0, LD_ROLL = 0, LD_50 = 0, LD_V50 = 0;
-const BUILD = "2026.09.01.0531";
+const BUILD = "2026.09.01.0953";
 
 /* ==================================================================
  * Flight summary
@@ -1917,7 +1948,7 @@ save();   // persist the one-time basis migration
 
 /* Version stamp — so you can tell which build is on the iPad. */
 document.querySelector("header .warnbar").insertAdjacentHTML("afterend",
-  `<div class="ver">build 2026.09.01.0531 · <span id="swState">standalone</span></div>`);
+  `<div class="ver">build 2026.09.01.0953 · <span id="swState">standalone</span></div>`);
 
 /* Register the service worker so offline is deterministic instead of relying
    on the browser's cache heuristics. Only meaningful over https from a real
