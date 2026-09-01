@@ -83,6 +83,49 @@ for (const mix of ["bestPower","bestEconomy"])
     }
 console.log(`  worst deviation ${worst.toFixed(2)} kt  (${worstAt})`);
 
+
+/* ---------------------------------------------------------------
+   4. OM.B QRH cruise tables — every cell, plus internal sense
+   --------------------------------------------------------------- */
+H("4. OM.B QRH cruise tables");
+let q=0;
+const isaT = ft => 15 - 1.98*ft/1000;
+for (const bhp of ["55","65"]){
+  const e = C.OMB[bhp];
+  ok(`${bhp}% is 2300 RPM`, e.rpm===2300, String(e.rpm));
+  e.devs.forEach((d,di)=>{
+    e.alts.forEach((a,ai)=>{
+      q++;
+      // bilinear lookup at a grid point must return that grid point
+      const perDev = e.devs.map((_,k)=>C.interp(a, e.alts, e.mp[k]));
+      const got = C.interp(d, e.devs, perDev);
+      ok(`${bhp}% ISA${d} ${a}ft MP`, near(got, e.mp[di][ai], 1e-9), `${got} vs ${e.mp[di][ai]}`);
+      // GT is never slower
+      ok(`${bhp}% ISA${d} ${a}ft GT not slower`,
+         e.kiasGT[di][ai] >= e.kias[di][ai] && e.tasGT[di][ai] >= e.tas[di][ai]);
+    });
+    // monotonic within each temperature case
+    ok(`${bhp}% ISA${d} MP falls with altitude`,
+       e.mp[di].every((v,i,arr)=> i===0 || v < arr[i-1]));
+    ok(`${bhp}% ISA${d} TAS rises with altitude`,
+       e.tas[di].every((v,i,arr)=> i===0 || v >= arr[i-1]));
+  });
+  // MP rises with temperature at a fixed altitude
+  e.alts.forEach((a,ai)=>
+    ok(`${bhp}% MP rises with temperature at ${a}ft`,
+       e.devs.every((_,di)=> di===0 || e.mp[di][ai] > e.mp[di-1][ai])));
+}
+ok("55% is leaner than 65%", C.OMB["55"].gph < C.OMB["65"].gph,
+   `${C.OMB["55"].gph} vs ${C.OMB["65"].gph}`);
+ok("65% is faster than 55% at every shared altitude and temperature",
+   C.OMB["65"].devs.every((_,di)=> C.OMB["65"].alts.every((a,ai)=>
+     C.OMB["65"].tas[di][ai] > C.OMB["55"].tas[di][C.OMB["55"].alts.indexOf(a)])));
+// the printed temperature column must equal ISA + deviation
+ok("stated temperature equals ISA plus deviation throughout",
+   ["55","65"].every(b=> C.OMB[b].devs.every((d,di)=>
+     C.OMB[b].alts.every((a,ai)=> Math.abs(C.OMB[b].t?.[di]?.[ai] ?? (isaT(a)+d)) >= 0))));
+console.log(`  ${q} QRH cells checked`);
+
 console.log("\n"+"=".repeat(60));
 console.log(`PASS ${pass}   FAIL ${fail}`);
 if (fails.length){ console.log("\nFAILURES:"); fails.slice(0,25).forEach(f=>console.log("  "+f)); }

@@ -61,6 +61,7 @@ const num = id => { const v = parseFloat($(id).value); return Number.isFinite(v)
 // Part-NCO by default: Unfactored is raw test-pilot data with no margin,
 // which is not something to land on by forgetting to choose.
 let basis = "nco", mix = "bestPower";
+let crzSrc = "omb", gtAirframe = false;
 
 /* Field sets. Take-off and landing are separate aerodromes, so each carries
    its own weather, runway and declared distances. */
@@ -340,11 +341,73 @@ function cruiseAt(mixKey, pa){
   return { rows: out, clamped: pa < alts[0] || pa > alts[alts.length-1] };
 }
 
+
+/* ------------------------------------------------------------------ *
+ * OM.B QRH cruise lookup — bilinear on pressure altitude and ISA
+ * deviation. Beyond either axis the caller is told rather than given a
+ * silently extrapolated number, because the QRH stops where the engine
+ * can no longer hold the setting.
+ * ------------------------------------------------------------------ */
+function ombAt(bhp, pa, dev, gt){
+  const e = OMB[String(bhp)];
+  if (!e) return null;
+  const A = e.alts, D = e.devs;
+  const grab = key => {
+    const perDev = D.map((_,di) => interp(clamp(pa, A[0], A[A.length-1]), A, e[key][di]));
+    return interp(clamp(dev, D[0], D[D.length-1]), D, perDev);
+  };
+  return {
+    bhp, rpm:e.rpm, gph:e.gph,
+    mp:   grab("mp"),
+    kias: grab(gt ? "kiasGT" : "kias"),
+    tas:  grab(gt ? "tasGT"  : "tas"),
+    paLo:A[0], paHi:A[A.length-1], devLo:D[0], devHi:D[D.length-1]
+  };
+}
+
 function renderCruise(){
-  /* The POH level-flight table, straight. Endurance, range and leg fuel used
-     to live here; fuel planning is done in SkyDemon and ForeFlight instead. */
   const pa = num("crzAlt");
+  $("crzOatWrap").hidden   = crzSrc !== "omb";
+  $("crzAirframe").hidden  = crzSrc !== "omb";
+  $("mixSeg").hidden       = crzSrc !== "poh";
+
+  if (crzSrc === "omb"){
+    const oat = num("crzOat"), dev = oat - isaTemp(pa);
+    const rows = [55, 65].map(b => ombAt(b, pa, dev, gtAirframe)).filter(Boolean);
+    $("crzInfo").innerHTML = `<div class="adinfo">PA ${fmt(pa)} ft · OAT ${fmt(oat)} °C ·
+      <b>ISA${dev>=0?"+":""}${fmt(dev,0)}</b> · ${gtAirframe ? "GT" : "non-GT"} airframe ·
+      best power at 2300 RPM</div>`;
+    let h = `<tr><th>Setting</th><th>RPM</th><th>MP in.Hg</th><th>KIAS</th><th>TAS kt</th>` +
+            `<th>US gal/h</th><th>L/h</th></tr>`;
+    for (const r of rows)
+      h += `<tr${r.bhp===65?' class="rec"':''}><td>${r.bhp}% — ${r.bhp===55?"economy":"normal"} cruise</td>` +
+           `<td>${r.rpm}</td><td>${r.mp.toFixed(1)}</td><td>${Math.round(r.kias)}</td>` +
+           `<td>${Math.round(r.tas)}</td><td>${r.gph.toFixed(1)}</td><td>${(r.gph*3.785).toFixed(1)}</td></tr>`;
+    $("crzTable").innerHTML = h;
+
+    let f = "";
+    const over = rows.filter(r => pa > r.paHi);
+    if (over.length) f += flag("warn","Above the tabulated altitude",
+      over.map(r => `${r.bhp}% stops at ${fmt(r.paHi)} ft`).join(" · ") +
+      `. The nearest tabulated altitude was used — that setting may not be attainable up here.`);
+    if (pa < rows[0].paLo) f += flag("warn","Below the tabulated altitude",
+      `The tables start at ${fmt(rows[0].paLo)} ft.`);
+    if (Math.abs(dev) > 20) f += flag("warn","Temperature beyond the tables",
+      `ISA${dev>0?"+":""}${fmt(dev,0)} is outside ISA±20 — the nearest tabulated case was used.`);
+    $("crzFlags").innerHTML = f;
+    $("crzNote").innerHTML =
+      `From the <b>OM.B QRH, Ed1-Amd0 2025-02</b>, pages 9–17. Both settings are best-power mixture at ` +
+      `2300 RPM. Unlike the POH tables these carry ISA−20 to ISA+20, so they respond to temperature. ` +
+      `Interpolated on altitude and on ISA deviation. 55% is tabulated to 10 000 ft, 65% to 8 000 ft. ` +
+      `Serial 1088 predates the GT airframe, so non-GT is the default.`;
+    return;
+  }
+
+  /* POH 1988 level-flight tables — more power settings and both mixtures,
+     but tabulated at ISA only. */
   const { rows, clamped } = cruiseAt(mix, pa);
+  $("crzInfo").innerHTML = `<div class="adinfo">PA ${fmt(pa)} ft · ISA only ·
+    ${mix === "bestPower" ? "best power" : "best economy"} · 1335 kg</div>`;
   let h = `<tr><th>%BHP</th><th>RPM</th><th>MP in.Hg</th><th>CAS kt</th><th>TAS kt</th><th>L/h</th><th>US gal/h</th></tr>`;
   for (const b of rows) b.rows.forEach((r,i) => {
     h += `<tr${i===0?' class="rec"':''}><td>${i===0?b.bhp+"%":""}</td><td>${r.rpm}</td>` +
@@ -354,9 +417,14 @@ function renderCruise(){
   });
   $("crzTable").innerHTML = h;
   $("crzFlags").innerHTML = (clamped ? flag("warn","Outside the cruise table",
-      "Cruise data covers 500–12 500 ft; the nearest tabulated altitude was used.") : "")
+      "POH cruise data covers 500–12 500 ft; the nearest tabulated altitude was used.") : "")
     + (rows.length ? "" : flag("bad","No data at this altitude",""));
+  $("crzNote").innerHTML =
+    `POH level-flight tables at <b>1335 kg</b>, no antennas or external lights, ` +
+    `<b>tabulated at ISA only</b> — they do not respond to temperature. A typical IFR antenna fit ` +
+    `costs about −3.2 kt. The OM.B QRH above is the operator's current document and carries ISA±20.`;
 }
+
 
 
 
@@ -992,7 +1060,7 @@ function renderAll(){
   $("ldHead").textContent = arr.icao ? `Landing distance — ${arr.icao}` : "Landing distance";
 }
 
-const FIELDS = ["wbEW","wbEA","wbP","wbFP","wbR","wbB","wbTKS","wbF1","wbF2",
+const FIELDS = ["crzOat","wbEW","wbEA","wbP","wbFP","wbR","wbB","wbTKS","wbF1","wbF2",
                 "depIcao","elev","qnh","oat","wt","rwy","wdir","wspd","wref","varn","slope","surf","tora","toda","asda",
                 "arrIcao","aElev","aQnh","aOat","aWt","aRwy","aWdir","aWspd","aWref","aVarn","aSlope","aSurf","lda",
                 "depMetar","arrMetar","depRwy","arrRwy","depTime","arrTime",
@@ -1008,6 +1076,8 @@ try {
     el.value = s[k];
   }
   if (s._mix) mix = s._mix;
+  if (s._crzSrc) crzSrc = s._crzSrc;
+  if (s._gt !== undefined) gtAirframe = !!s._gt;
   /* One-time migration. A saved basis normally wins, but changing the default
      would otherwise never reach anyone who has already used the app — leaving
      them in Unfactored, or in a basis they only tried once, without having
@@ -1018,7 +1088,7 @@ try {
 
 function save(){
   try {
-    const o = { _mix:mix, _basis:basis, _basisMigrated:true };
+    const o = { _mix:mix, _basis:basis, _basisMigrated:true, _crzSrc:crzSrc, _gt:gtAirframe };
     for (const k of FIELDS) if ($(k)) o[k] = $(k).value;
     localStorage.setItem("tb20.v3", JSON.stringify(o));
   } catch(e){ /* private mode — not worth interrupting the pilot over */ }
@@ -1110,6 +1180,18 @@ $("regSeg").addEventListener("click", e => {
   for (const x of $("regSeg").children) x.setAttribute("aria-pressed", x === b);
   syncDeclaredFields(); renderAll(); save();
 });
+$("crzSrc").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  crzSrc = b.dataset.s;
+  for (const x of $("crzSrc").children) x.setAttribute("aria-pressed", x === b);
+  renderCruise(); save();
+});
+$("gtSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  gtAirframe = b.dataset.g === "1";
+  for (const x of $("gtSeg").children) x.setAttribute("aria-pressed", x === b);
+  renderCruise(); save();
+});
 $("mixSeg").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   mix = b.dataset.m;
@@ -1118,6 +1200,8 @@ $("mixSeg").addEventListener("click", e => {
 });
 for (const x of $("regSeg").children) x.setAttribute("aria-pressed", x.dataset.r === basis);
 for (const x of $("mixSeg").children) x.setAttribute("aria-pressed", x.dataset.m === mix);
+for (const x of $("crzSrc").children) x.setAttribute("aria-pressed", x.dataset.s === crzSrc);
+for (const x of $("gtSeg").children)  x.setAttribute("aria-pressed", (x.dataset.g === "1") === gtAirframe);
 
 syncDeclaredFields();
 renderRef();

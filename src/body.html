@@ -257,22 +257,32 @@
   <section id="crz" hidden>
     <div class="card">
       <h2>Cruise setting</h2>
-      <div class="grid">
-        <div><label>Cruise PA (ft)</label><input id="crzAlt" type="number" inputmode="numeric" value="6500"></div>
+      <div class="seg" id="crzSrc">
+        <button aria-pressed="true" data-s="omb">OM.B QRH 2025</button>
+        <button data-s="poh">POH 1988</button>
       </div>
-      <div style="margin-top:11px" class="seg" id="mixSeg">
+      <div class="grid" style="margin-top:11px">
+        <div><label>Cruise PA (ft)</label><input id="crzAlt" type="number" inputmode="numeric" value="6500"></div>
+        <div id="crzOatWrap"><label>OAT at level (°C)</label><input id="crzOat" type="number" inputmode="numeric" value="3"></div>
+      </div>
+      <div id="crzAirframe" style="margin-top:11px">
+        <label>Airframe</label>
+        <div class="seg" id="gtSeg">
+          <button aria-pressed="true" data-g="0">Non-GT</button>
+          <button data-g="1">GT</button>
+        </div>
+      </div>
+      <div id="mixSeg" style="margin-top:11px" class="seg" hidden>
         <button aria-pressed="true" data-m="bestPower">Best power</button>
         <button data-m="bestEconomy">Best economy</button>
       </div>
+      <div id="crzInfo"></div>
     </div>
     <div class="card">
       <h2>Available settings</h2>
       <div class="scroll"><table id="crzTable"></table></div>
       <div id="crzFlags"></div>
-      <div class="note" style="margin-top:10px">POH level-flight tables at <b>1335 kg</b>, no antennas or
-      external lights. Interpolated between tabulated altitudes (500–12 500 ft). A typical IFR antenna fit
-      costs about −3.2 kt and −2% range. Fuel planning lives in SkyDemon and ForeFlight — this is the
-      POH performance table only.</div>
+      <div id="crzNote" class="note" style="margin-top:10px"></div>
     </div>
   </section>
 

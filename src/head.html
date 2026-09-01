@@ -16,6 +16,9 @@
   --warn:#d29922; --bad:#f85149; --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* the hidden attribute is only a UA display:none, so any author display rule
+   (.seg is display:flex) would otherwise beat it */
+[hidden]{display:none !important}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
   font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
 body{padding-bottom:env(safe-area-inset-bottom)}

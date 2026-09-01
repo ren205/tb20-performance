@@ -43,7 +43,7 @@ against the paper manual before flying them.**
 | W & B | F-GVLD weighing report, CG limits POH 2.9 |
 | Take-off | POH 5.8–5.9 (Fig 5.6 / 5.7) |
 | Climb | POH 5.10–5.13 (Fig 5.8–5.11) |
-| Cruise | POH 5.16–5.29 (Fig 5.13–5.26), both mixtures, 7 altitudes |
+| Cruise | OM.B QRH 2025 (ISA±20) or POH 5.16–5.29 (ISA only) |
 | Landing | POH 5.30–5.31 (Fig 5.27 / 5.28) |
 | Summary | One page of the above, to copy, email or print |
 | Reference | V-speeds, ASI markings, glide, stall speeds, calibration, holding |
@@ -55,6 +55,24 @@ Interpolation is linear on weight, pressure altitude and ISA deviation. Every
 tabulated corner reproduces the POH exactly. Beyond the tables, temperature and
 pressure altitude **extrapolate rather than clamp** — clamping would under-read
 distance on a hot or high day — and the app flags loudly when it does so.
+
+## Cruise
+
+Two sources, selectable:
+
+- **OM.B QRH, Ed1-Amd0 2025-02** (pages 9–17) — the operator's current
+  document. 55% "economy cruise" and 65% "normal cruise", both best-power
+  mixture at 2300 RPM, tabulated from **ISA−20 to ISA+20** so the figures
+  respond to temperature. Interpolated on altitude and on ISA deviation.
+  55% runs to 10 000 ft, 65% to 8 000 ft. KIAS and TAS are given for the
+  **non-GT and GT** airframes; serial 1088 predates the GT, so non-GT is the
+  default.
+- **POH 1988** — more power settings (50–75%) and both mixtures, but
+  **tabulated at ISA only**, so it cannot respond to temperature.
+
+The QRH is the default because temperature matters: at 5000 ft the 55% setting
+gives TAS 133 kt at ISA−20 and 138 kt at ISA+20, a spread the POH table simply
+does not carry.
 
 ## Weight and balance
 
@@ -207,7 +225,7 @@ every tab, so a single print gives one paper copy of the whole plan.
 
 ## Verification
 
-    node test/verify-tables.js     # 1040 checks
+    node test/verify-tables.js     # 1285 checks
     node test/verify-logic.js      #   55 checks
 
 `test/verify_core.js` is the app's own data and pure functions with the DOM
@@ -218,7 +236,12 @@ What is checked:
 - **Every tabulated POH cell** — take-off, landing, rate of climb and
   climb time/fuel/distance — is returned exactly at its own grid point, and
   every cruise value reproduces at each tabulated altitude.
-- **An independent physics cross-check of the cruise columns.** TAS computed
+- **Every OM.B QRH cell** — 100 rows across 55% and 65% at five temperatures —
+  returned exactly at its own grid point by the bilinear lookup, with manifold
+  pressure falling with altitude and rising with temperature, TAS rising with
+  altitude, GT never slower than non-GT, and 65% always faster and thirstier
+  than 55%.
+- **An independent physics cross-check of the POH cruise columns.** TAS computed
   from the POH's own CAS by `TAS = CAS / √σ` at ISA reproduces the tabulated
   TAS to within 0.91 kt across every entry, which would not hold if a digit in
   either column had been mistyped.

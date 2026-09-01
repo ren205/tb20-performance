@@ -20,6 +20,7 @@ VERSION=$(date -u +%Y.%m.%d.%H%M)
   echo '"use strict";'
   cat src/data_block.js   # POH tables, transcribed from Section 5
   cat src/aerodromes.js   # OurAirports pre-fill data (unofficial)
+  cat src/omb_cruise.js   # OM.B QRH cruise tables, 2025
   cat src/helpers.js      # interpolation, units, formatting
   cat src/logic.js        # factoring bases, W&B, rendering
   echo '</script>'

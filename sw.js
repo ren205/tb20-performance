@@ -10,7 +10,7 @@
    waits and the page offers an explicit "update" instead.
 
    Bump CACHE when the app changes; the build script does that automatically. */
-const CACHE = "tb20-v2026.08.27.1459";
+const CACHE = "tb20-v2026.09.01.0531";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest",
                "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
